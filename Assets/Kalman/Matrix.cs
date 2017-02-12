@@ -88,7 +88,7 @@ public struct Matrix {
     return toReturn;
   }
 
-  //Multiplies this Matrix by a Scalar
+  //Performs a component-wise sqrt on this matrix
   public Matrix sqrt() {
     Matrix toReturn = new Matrix(values);
     for (int i = 0; i < height; i++) { //i is the row in this matrix
@@ -99,7 +99,7 @@ public struct Matrix {
     return toReturn;
   }
 
-  //Adds this Matrix to another Matrix
+  //Performs a component-wise addition between two matrices
   public Matrix add(Matrix inMatrix) {
     if (width == inMatrix.width && height == inMatrix.height) {
       Matrix toReturn = new Matrix(inMatrix.values);
@@ -114,7 +114,7 @@ public struct Matrix {
     }
   }
 
-  //Subtracts another Matrix from this Matrix
+  //Performs a component-wise subtraction between two matrices
   public Matrix sub(Matrix inMatrix) {
     if (width == inMatrix.width && height == inMatrix.height) {
       Matrix toReturn = new Matrix(values);
@@ -140,7 +140,7 @@ public struct Matrix {
     return toReturn;
   }
 
-  //Gloms another Matrix onto the side of this one
+  //Gloms another Matrix onto the right side of this one
   public Matrix concatenate(Matrix inMatrix) {
     if (height == inMatrix.height) {
       Matrix toReturn = new Matrix(width + inMatrix.width, height);
