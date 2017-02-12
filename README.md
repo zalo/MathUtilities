@@ -54,7 +54,7 @@ This adds a function to apply torque "through" HingeJoints and to Rigidbodies in
 ###Acceleration Dampened Rigidbodies
 Attempts to simulate soft-spongy contact by damping the accelerations that are be applied to an object.  Phenomena like friction cause it to exhibit strange artifacts...
 
-##2D Platforming Character
+###2D Platforming Character
 <img src="http://i34.photobucket.com/albums/d144/Zalo10/platformer_zpsaszusawb.gif">
 
 Uses a neat trick where, if the anchor of a spring joint is moved, both connected rigidbodies are physically affected. This allows one to easily simulate "muscles".
