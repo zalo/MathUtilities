@@ -23,7 +23,7 @@ A textbook implementation of a Kalman filter (transcribed from wikipedia)   Kalm
 
 
 ##Matrix Class
-A generic matrix class and a set of basic matrix operations (multiplication, addition, subtraction, inversion, cholesky decomposition, and more).  Written to support the implementation of the Kalman Filter.   Regrettably, this library generates garbage.
+A generic matrix class and a set of basic matrix operations (multiplication, addition, subtraction, inversion, cholesky decomposition, and more).  Written to support the implementation of the Kalman Filter.   Usage of any of these operations will allocate a new array (garbage), so be careful about using this on performance constrained systems.
 
 
 ##Constraints/Inverse Kinematics
@@ -43,7 +43,7 @@ A minimal script for simulating a rigid body's motion using time-corrected verle
 A reference implementation that demonstrates how to apply bone motions to a model using the data contained within a skinned mesh renderer.   As they say, there is more than one way to skin a mesh.
 
 ###Thick Tesellated Plane Generator
-Useful for generating solid meshes that are essentially deformed planes (as is common in optics).
+Useful for generating solid meshes that are essentially deformed planes (shapes that are common in optics).
 
 ###Bundle Adjustment
 My attempts at implementing [Bundle Adjustment](https://en.wikipedia.org/wiki/Bundle_adjustment) (an algorithm which attempts to solve for the relative motion between two camera images, given the motion of a set of feature-points between the images).  It will converge when either position or rotation adjustment is applied, but not when they are applied simultaneously (not sure why...)
@@ -54,5 +54,12 @@ This adds a function to apply torque "through" HingeJoints and to Rigidbodies in
 ###Acceleration Dampened Rigidbodies
 Attempts to simulate soft-spongy contact by damping the accelerations that are be applied to an object.  Phenomena like friction cause it to exhibit strange artifacts...
 
+##2D Platforming Character
+<img src="http://i34.photobucket.com/albums/d144/Zalo10/platformer_zpsaszusawb.gif">
+
+Uses a neat trick where, if the anchor of a spring joint is moved, both connected rigidbodies are physically affected. This allows one to easily simulate "muscles".
+
 ###Rolling Cubes
+<img src="http://i34.photobucket.com/albums/d144/Zalo10/rolling_zpsw1tj8dks.gif">
+
 Fun for the whole family!
