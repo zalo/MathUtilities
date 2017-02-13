@@ -42,6 +42,9 @@ A minimal script for simulating a rigid body's motion using time-corrected verle
 ###Linear Blend Skinning
 A reference implementation that demonstrates how to apply bone motions to a model using the data contained within a skinned mesh renderer.   As they say, there is more than one way to skin a mesh.
 
+###Per-Pixel Texture Reprojection
+Demonstrates how to set up a shader to project a texture onto scene geometry using a (disabled) camera as the projector frustum.  Useful for illusions.
+
 ###Thick Tesellated Plane Generator
 Useful for generating solid meshes that are essentially deformed planes (shapes that are common in optics).
 
