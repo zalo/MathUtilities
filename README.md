@@ -26,10 +26,10 @@ A textbook implementation of a Kalman filter (transcribed from wikipedia)   Kalm
 A generic matrix class and a set of basic matrix operations (multiplication, addition, subtraction, inversion, cholesky decomposition, and more).  Written to support the implementation of the Kalman Filter.   Usage of any of these operations will allocate a new array (garbage), so be careful about using this on performance constrained systems.
 
 
-##Constraints/Inverse Kinematics
+##Constraints/[Inverse Kinematics](http://www.elysium-labs.com/robotics-corner/learn-robotics/introduction-to-robotics/kinematic-jacobian/)
 <img src="http://i34.photobucket.com/albums/d144/Zalo10/LimitedJoint_zpslapag2ch.gif"> <img src="http://i34.photobucket.com/albums/d144/Zalo10/Finger_zps3cugukbj.gif">
 
-A set of constraint functions that can be used to build an iterative inverse kinematics solver.
+A set of constraint functions that can be used to build [an iterative inverse kinematics solver.](https://makeshifted.itch.io/dexter-arm-ik)
 
 
 ##Verlet Rigidbody
