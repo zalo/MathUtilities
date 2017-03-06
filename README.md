@@ -45,6 +45,9 @@ A reference implementation that demonstrates how to apply bone motions to a mode
 ###Per-Pixel Texture Reprojection
 Demonstrates how to set up a shader to project a texture onto scene geometry using a (disabled) camera as the projector frustum.  Useful for illusions.
 
+###Minkowski Difference Visualizer
+Uses a compute shader to draw arbitrary 2D Minkowski "Differences" in real time.  The Minkowski Sum (and its modification, the "Minkowski Difference") is a core operation in collision detection.  This concept allows for a fully generalized way of determining whether any two objects are intersecting, and what the minimum translation is that separates them.  The key is determining whether the origin (of the coordinate system used in the operation) is inside of the resulting Minkowski Difference shape.   GJK is a collision detection technique that implements this check quickly for convex objects, with only a few samples of the implicit Minkowski Difference.
+
 ###Thick Tesellated Plane Generator
 Useful for generating solid meshes that are essentially deformed planes (shapes that are common in optics).
 
@@ -61,10 +64,6 @@ Attempts to simulate soft-spongy contact by damping the accelerations that are b
 <img src="http://i34.photobucket.com/albums/d144/Zalo10/platformer_zpsaszusawb.gif">
 
 Uses a neat trick where, if the anchor of a spring joint is moved, both connected rigidbodies are physically affected. This allows one to easily simulate "muscles".
-
-###Minkowski Difference Visualizer
-
-Uses a compute shader to draw arbitrary 2D Minkowski "Differences" in real time.  The Minkowski Sum (and its modification, the "Minkowski Difference") is a core operation in collision detection.  This concept allows for a fully generalized way of determining whether any two objects are intersecting, and what the minimum translation is that separates them.  The key is determining whether the origin (of the coordinate system used in the operation) is inside of the resulting Minkowski Difference shape.   GJK is a collision detection technique that implements this check quickly for convex objects, with only a few samples of the implicit Minkowski Difference.
 
 ###Rolling Cubes
 <img src="http://i34.photobucket.com/albums/d144/Zalo10/rolling_zpsw1tj8dks.gif">
