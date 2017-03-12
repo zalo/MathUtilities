@@ -24,6 +24,10 @@ public static class Constraints {
     return Vector3.Slerp(direction.normalized, normalDirection.normalized, (angle - maxAngle) / angle) * direction.magnitude;
   }
 
+  public static Vector3 ConstrainToSegment(this Vector3 position, Vector3 a, Vector3 b) {
+    return Vector3.Lerp(a, b, Vector3.Dot(position - a, (b - a).normalized) / (b - a).magnitude);
+  }
+
   public static Vector3 ConstrainDistance(this Vector3 position, Vector3 anchor, float distance) {
     return anchor + ((position - anchor).normalized * distance);
   }
