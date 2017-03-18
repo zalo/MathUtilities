@@ -9,7 +9,7 @@
 public class DrawMinkowski : MonoBehaviour {
   public RectTransform ShapeOne;
   public Texture2D sprite;
-  [RangeAttribute(0.02f, 0.5f)]
+  [Range(0.02f, 0.5f)]
   public float size = 0.1f;
   public Color color = new Color(1.0f, 0.6f, 0.3f, 0.03f);
   public Shader shader;
@@ -17,7 +17,6 @@ public class DrawMinkowski : MonoBehaviour {
   private ComputeBuffer cbDrawArgs;
   private ComputeBuffer cbPoints;
   private Vector3[] corners = new Vector3[4];
-  private Vector4[] fcorners = new Vector4[4];
 
   private void CreateResources() {
     if (cbDrawArgs == null) {
@@ -41,7 +40,7 @@ public class DrawMinkowski : MonoBehaviour {
   private void ReleaseResources() {
     if (cbDrawArgs != null) cbDrawArgs.Release(); cbDrawArgs = null;
     if (cbPoints != null) cbPoints.Release(); cbPoints = null;
-    Object.DestroyImmediate(mat);
+    DestroyImmediate(mat);
   }
 
   void OnDisable() {

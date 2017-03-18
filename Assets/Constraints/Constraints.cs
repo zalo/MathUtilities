@@ -24,8 +24,39 @@ public static class Constraints {
     return Vector3.Slerp(direction.normalized, normalDirection.normalized, (angle - maxAngle) / angle) * direction.magnitude;
   }
 
-  public static Vector3 ConstrainToSegment(this Vector3 position, Vector3 a, Vector3 b) {
-    return Vector3.Lerp(a, b, Vector3.Dot(position - a, (b - a).normalized) / (b - a).magnitude);
+  public static Vector3 ConstrainToSegment(this Vector3 position, Vector3 a, Vector3 b, float invBAMagnitude = 0f) {
+    invBAMagnitude = (invBAMagnitude == 0f ? 1f / (b - a).magnitude : invBAMagnitude);
+    return Vector3.Lerp(a, b, Vector3.Dot(position - a, (b - a) * invBAMagnitude) * invBAMagnitude);
+  }
+
+  static int sign(float num) {
+    return num == 0 ? 0 : (num >= 0 ? 1 : -1);
+  }
+
+  public static Vector3 ConstrainToQuad(this Vector3 position, Vector3 a, Vector3 b, Vector3 c, Vector3 d) {
+    Vector3 normal = Vector3.Cross(b - a, a - d);
+    bool outsidePlaneBounds =
+    (sign(Vector3.Dot(Vector3.Cross(b - a, normal), position - a)) +
+     sign(Vector3.Dot(Vector3.Cross(c - b, normal), position - b)) +
+     sign(Vector3.Dot(Vector3.Cross(d - c, normal), position - c)) +
+     sign(Vector3.Dot(Vector3.Cross(a - d, normal), position - d)) < 3);
+    if (!outsidePlaneBounds) {
+      return Vector3.ProjectOnPlane(position, normal);
+    } else {
+      Vector3[] edgePoints = { position.ConstrainToSegment(a, b),
+                               position.ConstrainToSegment(b, c),
+                               position.ConstrainToSegment(c, d),
+                               position.ConstrainToSegment(d, a)};
+      int minIndex = 0; float minDist = float.MaxValue;
+      for (int i = 0; i < edgePoints.Length; i++) {
+        float sqrDist = Vector3.SqrMagnitude(position - edgePoints[i]);
+        if (sqrDist < minDist) {
+          minIndex = i;
+          minDist = sqrDist;
+        }
+      }
+      return edgePoints[minIndex];
+    }
   }
 
   public static Vector3 ConstrainDistance(this Vector3 position, Vector3 anchor, float distance) {

@@ -35,7 +35,7 @@ A set of constraint functions that can be used to build [an iterative inverse ki
 ## Verlet Rigidbody
 <img src="http://i34.photobucket.com/albums/d144/Zalo10/Verlet_zpsvzicq1is.gif">
 
-A minimal script for simulating a rigid body's motion using time-corrected verlet integration (without using a Rigidbody component).
+A minimal script for simulating a rigid body's motion using time-corrected verlet integration (without using a Rigidbody component).  Also contains examples for linkage systems.
 
 
 
@@ -55,6 +55,10 @@ Uses a compute shader to draw arbitrary 2D Minkowski "Differences" in real time.
 
 ### Thick Tesellated Plane Generator
 Useful for generating solid meshes that are essentially deformed planes (shapes that are common in optics).
+
+
+### Capsule Mesh Generator
+Useful for generating capsule meshes with an arbitrary length and radius.
 
 
 ### Bundle Adjustment
