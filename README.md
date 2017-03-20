@@ -16,6 +16,12 @@ An algorithm that can take in an arbitrary set of point-pairs and find the globa
 A prefab that concatenates and warps the images from four cameras into one 180 degree fisheye view, projected stereographically.
 
 
+## Verlet Softbody, Rigidbody, and Chain
+<img src="http://i34.photobucket.com/albums/d144/Zalo10/softSphere_zpsle1ca59w.gif"> <img src="http://i34.photobucket.com/albums/d144/Zalo10/Verlet_zpsvzicq1is.gif">
+
+Numerous examples of using verlet integration ([a subset of Position Based Dynamics](http://matthias-mueller-fischer.ch/publications/posBasedDyn.pdf)) to simulate soft/rigid bodies, cloth, and particle linkage chains.
+
+
 ## [Kalman Filter](https://en.wikipedia.org/wiki/Kalman_filter#Details)
 <img src="http://i34.photobucket.com/albums/d144/Zalo10/kalman2_zps4zqhnqcj.gif">
 
@@ -30,12 +36,6 @@ A generic matrix class and a set of basic matrix operations (multiplication, add
 <img src="http://i34.photobucket.com/albums/d144/Zalo10/LimitedJoint_zpslapag2ch.gif"> <img src="http://i34.photobucket.com/albums/d144/Zalo10/Finger_zps3cugukbj.gif">
 
 A set of constraint functions that can be used to build [an iterative inverse kinematics solver.](https://makeshifted.itch.io/dexter-arm-ik)
-
-
-## Verlet Rigidbody
-<img src="http://i34.photobucket.com/albums/d144/Zalo10/Verlet_zpsvzicq1is.gif">
-
-A minimal script for simulating a rigid body's motion using time-corrected verlet integration (without using a Rigidbody component).  Also contains examples for linkage systems.
 
 
 
