@@ -81,9 +81,12 @@ public static class Verlet {
 
     public void ResolveConstraint(ref Vector3[] vertices) {
       if (equality || (vertices[index1] - vertices[index2]).sqrMagnitude > sqrDistance) {
-        Vector3 tempPos = vertices[index1];
-        vertices[index1] += (vertices[index1].ConstrainDistance(vertices[index2], Distance) - vertices[index1]) / 2f;
-        vertices[index2] += (vertices[index2].ConstrainDistance(tempPos, Distance) - vertices[index2]) / 2f;
+        Vector3 offset = (vertices[index2] - vertices[index1]);
+        float offsetDistance = offset.magnitude;
+        float factor = (offsetDistance - Distance) / offsetDistance;
+        Vector3 correction = offset * factor * 0.5f;
+        vertices[index1] += correction;
+        vertices[index2] -= correction;
       }
     }
   }
