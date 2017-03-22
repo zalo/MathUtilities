@@ -33,7 +33,7 @@ public class KabschSolver {
   Vector3[] QuatBasis = new Vector3[3];
   Vector3[] DataCovariance = new Vector3[3];
   Quaternion OptimalRotation = Quaternion.identity;
-  public Matrix4x4 SolveKabsch(Vector3[] inPoints, Vector3[] refPoints) {
+  public Matrix4x4 SolveKabsch(Vector3[] inPoints, Vector3[] refPoints, bool solveRotation = true) {
     if (inPoints.Length != refPoints.Length) { return Matrix4x4.identity; }
 
     //Calculate the centroid offset and construct the centroid-shifted point matrices
@@ -46,7 +46,9 @@ public class KabschSolver {
     refCentroid /= refPoints.Length;
 
     //Calculate the 3x3 covariance matrix, and the optimal rotation
-    extractRotation(TransposeMultSubtract(inPoints, refPoints, inCentroid, refCentroid, DataCovariance), ref OptimalRotation);
+    if (solveRotation) {
+      extractRotation(TransposeMultSubtract(inPoints, refPoints, inCentroid, refCentroid, DataCovariance), ref OptimalRotation);
+    }
 
     return Matrix4x4.TRS(refCentroid, Quaternion.identity, Vector3.one) *
            Matrix4x4.TRS(Vector3.zero, OptimalRotation, Vector3.one) *

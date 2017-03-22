@@ -9,7 +9,7 @@ public static class Verlet {
       Vector3 tempPos = curPoints[i];
 
       //Integrate Position
-      curPoints[i] += (curPoints[i] - (Vector3)prevPoints[i]) * (Time.deltaTime / prevDeltaTime) + (gravity * Time.deltaTime * Time.deltaTime);
+      curPoints[i] += (curPoints[i] - (Vector3)prevPoints[i]) * (deltaTime / prevDeltaTime) + (gravity * deltaTime * deltaTime);
 
       //Store State from Previous Frame
       prevPoints[i] = tempPos;
@@ -49,13 +49,27 @@ public static class Verlet {
     }
   }
 
-  public static void setVolume(float desiredVolume, Vector3[] verts, Vector3[] normals, int[] triangles) {
+  //Recalculate Normals while allocating garbage, but more quickly
+  public static void RecalculateNormalsAlloc(Vector3[] vertices, int[] triangles, ref Vector3[] normals) {
+    Mesh tempMesh = new Mesh();
+    tempMesh.vertices = vertices;
+    tempMesh.triangles = triangles;
+    tempMesh.RecalculateNormals();
+    Vector3[] tempNorm = tempMesh.normals;
+    for (int i = 0; i < normals.Length; i++) { normals[i] = tempNorm[i]; }
+  }
+
+  public static void setVolume(float desiredVolume, Vector3[] verts, Vector3[] normals, int[] triangles, float surfaceArea = 0f, bool fastButGarbage = true) {
     //Calculate the normals of each vertex...
-    RecalculateNormalsNonAlloc(verts, triangles, ref normals);
+    if (fastButGarbage) {
+      RecalculateNormalsAlloc(verts, triangles, ref normals);
+    } else {
+      RecalculateNormalsNonAlloc(verts, triangles, ref normals);
+    }
 
     //And the distance we have to dilate each vert to acheive the desired volume...
     float deltaVolume = desiredVolume - VolumeOfMesh(verts, triangles);
-    float dilationDistance = deltaVolume / SurfaceAreaOfMesh(verts, triangles);
+    float dilationDistance = deltaVolume / (surfaceArea==0f?SurfaceAreaOfMesh(verts, triangles):surfaceArea);
 
     //And we translate the verts to acheive that volume
     for (int j = 0; j < verts.Length; j++) {
@@ -82,11 +96,9 @@ public static class Verlet {
     public void ResolveConstraint(ref Vector3[] vertices) {
       if (equality || (vertices[index1] - vertices[index2]).sqrMagnitude > sqrDistance) {
         Vector3 offset = (vertices[index2] - vertices[index1]);
-        float offsetDistance = offset.magnitude;
-        float factor = (offsetDistance - Distance) / offsetDistance;
-        Vector3 correction = offset * factor * 0.5f;
-        vertices[index1] += correction;
-        vertices[index2] -= correction;
+        offset *= sqrDistance / (Vector3.Dot(offset, offset) + sqrDistance) - 0.5f;
+        vertices[index1] -= offset;
+        vertices[index2] += offset;
       }
     }
   }
@@ -104,8 +116,8 @@ public static class Verlet {
     }
 
     for (int i = 0; i < iterations; i++) {
-      foreach (DistConstraint constraint in constraints) {
-        constraint.ResolveConstraint(ref verts);
+      for (int j = 0; j < constraints.Count; j++) {
+        constraints[j].ResolveConstraint(ref verts);
       }
     }
   }

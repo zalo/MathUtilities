@@ -9,7 +9,9 @@ public class Softbody : MonoBehaviour {
   public float inflationAmount = 0.8f;
   [Range(1, 10)]
   public int solverIterations = 1;
+  public bool transformFollowsRotation = false;
 
+  protected const bool fastButGarbage = false;
   protected List<Verlet.DistConstraint> constraints;
   protected Mesh bodyMesh;
   protected Vector3[] originalVerts;
@@ -17,10 +19,12 @@ public class Softbody : MonoBehaviour {
   protected Vector4[] prevBodyVerts;
   protected int[] bodyTriangles;
   protected Vector3[] bodyNormals;
+  protected Vector3[] renderVerts;
   protected Vector3[] renderNormals;
   protected Vector3 scaledGravity;
   protected KabschSolver kabschSolver = new KabschSolver();
   protected float initialVolume = (4f / 3f) * Mathf.PI;
+  protected float initialSurfaceArea = 4f * Mathf.PI;
   protected float previousDeltaTime = 1f;
 
   void Start() {
@@ -56,8 +60,9 @@ public class Softbody : MonoBehaviour {
     }
 
     //Physics
-    Verlet.Integrate(bodyVerts, prevBodyVerts, scaledGravity, Mathf.Clamp(Time.deltaTime, 0f, previousDeltaTime*2f), previousDeltaTime);
-    previousDeltaTime = Mathf.Clamp(Time.deltaTime, 0f, previousDeltaTime * 2f);
+    float currentDeltaTime = Mathf.Clamp(Time.deltaTime, 0.01f, previousDeltaTime * 1.4f);
+    Verlet.Integrate(bodyVerts, prevBodyVerts, scaledGravity, currentDeltaTime, previousDeltaTime);
+    previousDeltaTime = currentDeltaTime;
 
     //Anchor a point on the body
     if (anchor != null && anchor.gameObject.activeInHierarchy) {
@@ -69,7 +74,7 @@ public class Softbody : MonoBehaviour {
       Verlet.resolveDistanceConstraints(constraints, ref bodyVerts, 1);
 
       //Next, set the volume of the soft body
-      Verlet.setVolume(inflationAmount * initialVolume, bodyVerts, bodyNormals, bodyTriangles);
+      Verlet.setVolume(inflationAmount * initialVolume, bodyVerts, bodyNormals, bodyTriangles, initialSurfaceArea, fastButGarbage);
     }
 
     //Also sneak in a ground plane here:
@@ -83,7 +88,7 @@ public class Softbody : MonoBehaviour {
     }
 
     //Calculate the the position and rotation of the body
-    Matrix4x4 toWorldSpace = kabschSolver.SolveKabsch(originalVerts, bodyVerts);
+    Matrix4x4 toWorldSpace = kabschSolver.SolveKabsch(originalVerts, bodyVerts, transformFollowsRotation);
     transform.position = toWorldSpace.GetVector3();
     transform.rotation = toWorldSpace.GetQuaternion();
 
