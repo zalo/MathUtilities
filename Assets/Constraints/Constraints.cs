@@ -24,43 +24,19 @@ public static class Constraints {
     return Vector3.Slerp(direction.normalized, normalDirection.normalized, (angle - maxAngle) / angle) * direction.magnitude;
   }
 
-  public static Vector3 ConstrainToSegment(this Vector3 position, Vector3 a, Vector3 b, float invBAMagnitude = 0f) {
-    invBAMagnitude = (invBAMagnitude == 0f ? 1f / (b - a).magnitude : invBAMagnitude);
-    return Vector3.Lerp(a, b, Vector3.Dot(position - a, (b - a) * invBAMagnitude) * invBAMagnitude);
-  }
-
-  static int sign(float num) {
-    return num == 0 ? 0 : (num >= 0 ? 1 : -1);
-  }
-
-  public static Vector3 ConstrainToQuad(this Vector3 position, Vector3 a, Vector3 b, Vector3 c, Vector3 d) {
-    Vector3 normal = Vector3.Cross(b - a, a - d);
-    bool outsidePlaneBounds =
-    (sign(Vector3.Dot(Vector3.Cross(b - a, normal), position - a)) +
-     sign(Vector3.Dot(Vector3.Cross(c - b, normal), position - b)) +
-     sign(Vector3.Dot(Vector3.Cross(d - c, normal), position - c)) +
-     sign(Vector3.Dot(Vector3.Cross(a - d, normal), position - d)) < 3);
-    if (!outsidePlaneBounds) {
-      return Vector3.ProjectOnPlane(position, normal);
-    } else {
-      Vector3[] edgePoints = { position.ConstrainToSegment(a, b),
-                               position.ConstrainToSegment(b, c),
-                               position.ConstrainToSegment(c, d),
-                               position.ConstrainToSegment(d, a)};
-      int minIndex = 0; float minDist = float.MaxValue;
-      for (int i = 0; i < edgePoints.Length; i++) {
-        float sqrDist = Vector3.SqrMagnitude(position - edgePoints[i]);
-        if (sqrDist < minDist) {
-          minIndex = i;
-          minDist = sqrDist;
-        }
-      }
-      return edgePoints[minIndex];
-    }
+  public static Vector3 ConstrainToSegment(this Vector3 position, Vector3 a, Vector3 b) {
+    Vector3 ba = b - a;
+    return Vector3.Lerp(a, b, Vector3.Dot(position - a, ba) / ba.sqrMagnitude);
   }
 
   public static Vector3 ConstrainDistance(this Vector3 position, Vector3 anchor, float distance) {
     return anchor + ((position - anchor).normalized * distance);
+  }
+
+  public static Vector3 ApproxConstrainDistance(this Vector3 position, Vector3 anchor, float sqrDistance) {
+    Vector3 offset = (position - anchor);
+    offset *= (sqrDistance / (Vector3.Dot(offset, offset) + sqrDistance) - 0.5f) * 2f;
+    return position + offset;
   }
 
   public static Quaternion ConstrainRotationToCone(Quaternion rotation, Vector3 constraintAxis, Vector3 objectLocalAxis, float maxAngle) {
@@ -72,5 +48,39 @@ public static class Constraints {
     Vector3 perpendicularAxis = Vector3.Cross(constraintAxis, Quaternion.Euler(10f, 0f, 0f) * constraintAxis).normalized;
     Quaternion coneConstraint = Quaternion.FromToRotation(objectLocalAxis, coneRotation * objectLocalAxis);
     return ConstrainRotationToCone(coneRotation, coneConstraint * perpendicularAxis, perpendicularAxis, maxTwistAngle);
+  }
+
+  private static int sign(float num) {
+    return num == 0 ? 0 : (num >= 0 ? 1 : -1);
+  }
+
+  public static Vector3 ConstrainToTriangle(this Vector3 position, Vector3 a, Vector3 b, Vector3 c) {
+    Vector3 normal = Vector3.Cross(b - a, a - c);
+    bool outsidePlaneBounds =
+    (sign(Vector3.Dot(Vector3.Cross(b - a, normal), position - a)) +
+     sign(Vector3.Dot(Vector3.Cross(c - b, normal), position - b)) +
+     sign(Vector3.Dot(Vector3.Cross(a - c, normal), position - c)) < 2);
+    if (!outsidePlaneBounds) {
+      //Project onto plane
+      return Vector3.ProjectOnPlane(position, normal);
+    } else {
+      //Constrain to edges
+      Vector3 edge1 = position.ConstrainToSegment(a, b);
+      Vector3 edge2 = position.ConstrainToSegment(b, c);
+      Vector3 edge3 = position.ConstrainToSegment(c, a);
+      float sm1 = Vector3.SqrMagnitude(position - edge1);
+      float sm2 = Vector3.SqrMagnitude(position - edge2);
+      float sm3 = Vector3.SqrMagnitude(position - edge3);
+      if (sm1 < sm2) {
+        if (sm1 < sm3) {
+          return edge1;
+        }
+      } else {
+        if (sm2 < sm3) {
+          return edge2;
+        }
+      }
+      return edge3;
+    }
   }
 }

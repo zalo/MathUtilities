@@ -41,10 +41,9 @@ public class DrawCapsule : MonoBehaviour {
     float invScale = 1f / scale;
     Vector3 localStart = (CapsuleStart.position - midPoint) * invScale;
     Vector3 localEnd = (CapsuleEnd.position - midPoint) * invScale;
-    float inverseLength = 1f / ((localStart - localEnd).magnitude);
 
     for (int i = 0; i < sphereVerts.Length; i++) {
-      Vector3 nearestPointOnSegment = sphereVerts[i].ConstrainToSegment(localStart, localEnd, inverseLength);
+      Vector3 nearestPointOnSegment = sphereVerts[i].ConstrainToSegment(localStart, localEnd);
       capsuleVerts[i] = sphereVerts[i].ConstrainDistance(nearestPointOnSegment, Radius * invScale);
       capsuleNormals[i] = sphereVerts[i] - nearestPointOnSegment;
     }
