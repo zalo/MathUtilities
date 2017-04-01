@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 
-public class RobotIK : MonoBehaviour {
+public class CCDIK : MonoBehaviour {
   public Transform Tooltip;
   public Transform Target;
-  public IKJoint[] joints;
+  public CCDIKJoint[] joints;
 
   void Update() {
     for (int j = 0; j < joints.Length; j++) {

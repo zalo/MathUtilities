@@ -1,4 +1,6 @@
-﻿Shader "Unlit/UnlitProjectionSurface" {
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Unlit/UnlitProjectionSurface" {
 	Properties {
 		_MainTex ("Texture", 2D) = "white" {}
 	}
@@ -45,7 +47,7 @@
 			
 			v2f vert (appdata input) {
 				v2f output;
-				output.pos = mul(UNITY_MATRIX_MVP, input.vertex);
+				output.pos = UnityObjectToClipPos(input.vertex);
 				output.position_in_world_space = mul(unity_ObjectToWorld, input.vertex);
 				return output;
 			}

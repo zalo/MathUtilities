@@ -1,4 +1,6 @@
-﻿/// A Minkowski Difference renderer based on Aras's examples
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+/// A Minkowski Difference renderer based on Aras's examples
 /// https://forum.unity3d.com/threads/compute-shaders.148874/#post-1021130
 Shader "DX11/DrawMinkowski" {
 	Properties{
@@ -30,7 +32,7 @@ Shader "DX11/DrawMinkowski" {
 	v2f vert(appdata v)
 	{
 		v2f o;
-		o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+		o.pos = UnityObjectToClipPos(v.vertex);
 		o.uv = v.texcoord;
 		return o;
 	}

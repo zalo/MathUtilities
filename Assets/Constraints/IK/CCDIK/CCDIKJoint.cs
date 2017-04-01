@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class IKJoint : MonoBehaviour {
+public class CCDIKJoint : MonoBehaviour {
   public Vector3 axis = Vector3.right;
   public float maxAngle = 180;
 

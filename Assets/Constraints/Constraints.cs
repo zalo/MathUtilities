@@ -1,13 +1,17 @@
 ﻿ using UnityEngine;
 
 public static class Constraints {
-  public static void ConstrainToPoint(this Transform transform, Vector3 oldPoint, Vector3 newPoint, float alpha = 1f) {
-    Vector3 oldDisplacement = transform.position - oldPoint;
-    Vector3 newCenterPosition = newPoint + (transform.position - newPoint).normalized * oldDisplacement.magnitude;
-    Vector3 newDisplacement = newCenterPosition - newPoint;
+  public static void ConstrainToPoint(this Transform transform, Vector3 oldPoint, Vector3 newPoint, bool fastApproximate = true) {
+    Quaternion rotation = Quaternion.FromToRotation(transform.position - oldPoint, transform.position - newPoint);
+    transform.position = fastApproximate ? transform.position.FastConstrainDistance(newPoint, (transform.position - oldPoint).sqrMagnitude) :
+                                           transform.position.ConstrainDistance(newPoint, (transform.position - oldPoint).magnitude);
+    transform.rotation = rotation * transform.rotation;
+  }
 
-    transform.position = Vector3.Lerp(transform.position, newCenterPosition, alpha);
-    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.FromToRotation(oldDisplacement, newDisplacement) * transform.rotation, alpha);
+  public static void ConstrainToPoint(this Transform transform, Vector3 oldPoint, Vector3 newPoint, Vector3 anchor) {
+    Quaternion rotation = Quaternion.FromToRotation(oldPoint - anchor, newPoint - anchor);
+    transform.RotateAroundPivot(anchor, rotation);
+    transform.position += newPoint - oldPoint.RotateAroundPivot(anchor, rotation);
   }
 
   public static void RotateToPoint(this Transform transform, Vector3 oldPoint, Vector3 newPoint, float alpha = 1f) {
@@ -33,7 +37,7 @@ public static class Constraints {
     return anchor + ((position - anchor).normalized * distance);
   }
 
-  public static Vector3 ApproxConstrainDistance(this Vector3 position, Vector3 anchor, float sqrDistance) {
+  public static Vector3 FastConstrainDistance(this Vector3 position, Vector3 anchor, float sqrDistance) {
     Vector3 offset = (position - anchor);
     offset *= (sqrDistance / (Vector3.Dot(offset, offset) + sqrDistance) - 0.5f) * 2f;
     return position + offset;
@@ -82,5 +86,15 @@ public static class Constraints {
       }
       return edge3;
     }
+  }
+
+  public static void RotateAroundPivot(this Transform transform, Vector3 pivot, Quaternion rotation, float alpha = 1f) {
+    Quaternion toRotate = Quaternion.Slerp(Quaternion.identity, rotation, alpha);
+    transform.position = transform.position.RotateAroundPivot(pivot, rotation);
+    transform.rotation = toRotate * transform.rotation;
+  }
+
+  public static Vector3 RotateAroundPivot(this Vector3 point, Vector3 pivot, Quaternion rotation) {
+    return (rotation * (point - pivot)) + pivot;
   }
 }
