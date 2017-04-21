@@ -97,4 +97,11 @@ public static class Constraints {
   public static Vector3 RotateAroundPivot(this Vector3 point, Vector3 pivot, Quaternion rotation) {
     return (rotation * (point - pivot)) + pivot;
   }
+
+  //Credit to Sam Hocevar of LolEngine
+  //lolengine.net/blog/2013/09/21/picking-orthogonal-vector-combing-coconuts
+  public static Vector3 perpendicular(this Vector3 vec) {
+      return Mathf.Abs(vec.x) > Mathf.Abs(vec.z) ? new Vector3(-vec.y, vec.x, 0f)
+                                                 : new Vector3(0f, -vec.z, vec.y);
+  }
 }

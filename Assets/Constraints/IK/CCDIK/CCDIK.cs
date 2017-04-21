@@ -7,7 +7,7 @@ public class CCDIK : MonoBehaviour {
 
   void Update() {
     for (int j = 0; j < joints.Length; j++) {
-      joints[j].Evaluate(Tooltip, Target);
+      joints[j].Evaluate(Tooltip, Target, j < 2);
     }
   }
 }
