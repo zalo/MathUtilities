@@ -1,182 +1,164 @@
 ﻿using UnityEngine;
 
 //To write a Kalman Filter, one must first invent Linear Algebra
-public struct Matrix {
-  public float[,] values;
-  public int width;
-  public int height;
+public static class MatrixExtensions {
 
-  //Makes a square identity matrix with this dimension
-  public Matrix(int inwidth) {
-    values = new float[inwidth, inwidth];
-    height = inwidth;
-    width = inwidth;
+  //Makes an identity matrix with these dimensions
+  public static float[,] identity (int inwidth, int inheight) {
+    float[,] toReturn = new float[inheight, inwidth];
 
     //Set the diagonals to 1
-    for (int i = 0; i < width; i++) {
-      values[i, i] = 1f;
+    for (int i = 0; i < Mathf.Min(inwidth, inheight); i++) {
+      toReturn[i, i] = 1f;
     }
+
+    return toReturn;
   }
 
-  //Makes an Empty (all 0's) matrix with these dimensions
-  public Matrix(int inwidth, int inheight, bool Identity = false) {
-    values = new float[inheight, inwidth];
-    height = inheight;
-    width = inwidth;
-
-    //If it should be an identity matrix, or an empty matrix
-    if (Identity) {
-      //Set the diagonals to 1
-      for (int i = 0; i < (width >= height ? height : width); i++) {
-        values[i, i] = 1f;
-      }
-    }
-  }
-
-  //Initializes a Matrix with this 2D Array (does a deep copy)
-  public Matrix(float[,] invalues) {
-    values = (float[,])invalues.Clone();
-    width = invalues.GetLength(1);
-    height = invalues.GetLength(0);
+  public static float[,] identity(int indimension) {
+    return identity(indimension, indimension);
   }
 
   //Multiplies this Matrix by another Matrix
-  public Matrix mult(Matrix inMatrix) {
-    if (width == inMatrix.height) {
-      Matrix toReturn = new Matrix(new float[height, inMatrix.width]);
-      for (int i = 0; i < height; i++) { //i is the row in this matrix
-        for (int j = 0; j < inMatrix.width; j++) {//j is the column in the other matrix
-          for (int k = 0; k < width; k++) {//k is the column in this matrix
-            toReturn.values[i, j] += values[i, k] * inMatrix.values[k, j];
+  public static float[,] mult(this float[,] thisMatrix, float[,] inMatrix) {
+    if (thisMatrix.GetLength(1) == inMatrix.GetLength(0)) {
+      float[,] toReturn = new float[thisMatrix.GetLength(0), inMatrix.GetLength(1)];
+      for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
+        for (int j = 0; j < inMatrix.GetLength(1); j++) { //j is the column in the other matrix
+          for (int k = 0; k < thisMatrix.GetLength(1); k++) { //k is the column in this matrix
+            toReturn[i, j] += thisMatrix[i, k] * inMatrix[k, j];
           }
         }
       }
       return toReturn;
     } else {
-      return this;
+      return thisMatrix;
     }
   }
 
   //Returns a Vector3 column of a 3x3 matrix
-  public Vector3 col(int i) {
-    if (height == 3 && width == 3) {
-      return new Vector3(values[0, i], values[1, i], values[2, i]);
+  public static Vector3 col(this float[,] thisMatrix, int i) {
+    if (thisMatrix.GetLength(0) == 3 && thisMatrix.GetLength(1) == 3) {
+      return new Vector3(thisMatrix[0, i], thisMatrix[1, i], thisMatrix[2, i]);
     }else {
-      Debug.LogError("NOT 3x3 MATRIX");
+      Debug.LogError("Not a 3x3 Matrix!");
       return Vector3.one;
     }
   }
 
   //Returns a Vector3 row of a 3x3 matrix
-  public Vector3 row(int i) {
-    if (height == 3 && width == 3) {
-      return new Vector3(values[i, 0], values[i, 1], values[i, 2]);
+  public static Vector3 row(this float[,] thisMatrix, int i) {
+    if (thisMatrix.GetLength(0) == 3 && thisMatrix.GetLength(1) == 3) {
+      return new Vector3(thisMatrix[i, 0], thisMatrix[i, 1], thisMatrix[i, 2]);
     } else {
-      Debug.LogError("NOT 3x3 MATRIX");
+      Debug.LogError("Not a 3x3 Matrix!");
       return Vector3.one;
     }
   }
 
   //Multiplies this Matrix by a Scalar
-  public Matrix mult(float inScalar) {
-    Matrix toReturn = new Matrix(values);
-    for (int i = 0; i < height; i++) { //i is the row in this matrix
-      for (int j = 0; j < width; j++) {//j is the column in the this matrix
-        toReturn.values[i, j] *= inScalar;
+  public static float[,] mult(this float[,] thisMatrix, float inScalar) {
+    float[,] toReturn = new float[thisMatrix.GetLength(0), thisMatrix.GetLength(1)];
+    for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
+      for (int j = 0; j < thisMatrix.GetLength(1); j++) { //j is the column in the this matrix
+        toReturn[i, j] = thisMatrix[i, j] * inScalar;
       }
     }
     return toReturn;
   }
 
   //Performs a component-wise sqrt on this matrix
-  public Matrix sqrt() {
-    Matrix toReturn = new Matrix(values);
-    for (int i = 0; i < height; i++) { //i is the row in this matrix
-      for (int j = 0; j < width; j++) {//j is the column in the this matrix
-        toReturn.values[i, j] = Mathf.Sqrt(toReturn.values[i, j]);
+  public static float[,] sqrt(this float[,] thisMatrix) {
+    float[,] toReturn = new float[thisMatrix.GetLength(0), thisMatrix.GetLength(1)];
+    for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
+      for (int j = 0; j < thisMatrix.GetLength(1); j++) { //j is the column in the this matrix
+        toReturn[i, j] = Mathf.Sqrt(toReturn[i, j]);
       }
     }
     return toReturn;
   }
 
   //Performs a component-wise addition between two matrices
-  public Matrix add(Matrix inMatrix) {
-    if (width == inMatrix.width && height == inMatrix.height) {
-      Matrix toReturn = new Matrix(inMatrix.values);
-      for (int i = 0; i < height; i++) { //i is the row in this matrix
-        for (int j = 0; j < width; j++) {//j is the column in the other matrix
-          toReturn.values[i, j] += values[i, j];
+  public static float[,] add(this float[,] thisMatrix, float[,] inMatrix) {
+    if (thisMatrix.GetLength(0) == inMatrix.GetLength(0) && thisMatrix.GetLength(1) == inMatrix.GetLength(1)) {
+      float[,] toReturn = new float[thisMatrix.GetLength(0), thisMatrix.GetLength(1)];
+      for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
+        for (int j = 0; j < thisMatrix.GetLength(1); j++) { //j is the column in this matrix
+          toReturn[i, j] = thisMatrix[i, j] + inMatrix[i, j];
         }
       }
       return toReturn;
     } else {
-      return this;
+      Debug.LogWarning("Matrices are not of equal dimensions!");
+      return thisMatrix;
     }
   }
 
   //Performs a component-wise subtraction between two matrices
-  public Matrix sub(Matrix inMatrix) {
-    if (width == inMatrix.width && height == inMatrix.height) {
-      Matrix toReturn = new Matrix(values);
-      for (int i = 0; i < height; i++) { //i is the row in this matrix
-        for (int j = 0; j < width; j++) {//j is the column in the other matrix
-          toReturn.values[i, j] -= inMatrix.values[i, j];
+  public static float[,] sub(this float[,] thisMatrix, float[,] inMatrix) {
+    if (thisMatrix.GetLength(0) == inMatrix.GetLength(0) && thisMatrix.GetLength(1) == inMatrix.GetLength(1)) {
+      float[,] toReturn = new float[thisMatrix.GetLength(0), thisMatrix.GetLength(1)];
+      for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
+        for (int j = 0; j < thisMatrix.GetLength(1); j++) { //j is the column in this matrix
+          toReturn[i, j] = thisMatrix[i, j] - inMatrix[i, j];
         }
       }
       return toReturn;
     } else {
-      return this;
+      Debug.LogWarning("Matrices are not of equal dimensions!");
+      return thisMatrix;
     }
   }
 
   //Transposes this Matrix
-  public Matrix transpose() {
-    Matrix toReturn = new Matrix(new float[width, height]);
-    for (int i = 0; i < height; i++) { //i is the row in this matrix
-      for (int j = 0; j < width; j++) {//j is the column in the other matrix
-        toReturn.values[j, i] = values[i, j];
+  public static float[,] transpose(this float[,] thisMatrix) {
+    float[,] toReturn = new float[thisMatrix.GetLength(1), thisMatrix.GetLength(0)];
+    for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
+      for (int j = 0; j < thisMatrix.GetLength(1); j++) { //j is the column in this matrix
+        toReturn[j, i] = thisMatrix[i, j];
       }
     }
     return toReturn;
   }
 
   //Gloms another Matrix onto the right side of this one
-  public Matrix concatenate(Matrix inMatrix) {
-    if (height == inMatrix.height) {
-      Matrix toReturn = new Matrix(width + inMatrix.width, height);
-      for (int i = 0; i < height; i++) { //i is the row in this matrix
-        for (int j = 0; j < width; j++) {//j is the column in the this matrix
-          toReturn.values[i, j] = values[i, j];
+  public static float[,] concatenate(this float[,] thisMatrix, float[,] inMatrix) {
+    if (thisMatrix.GetLength(0) == inMatrix.GetLength(1)) {
+      float[,] toReturn = new float[thisMatrix.GetLength(0), thisMatrix.GetLength(1) + inMatrix.GetLength(1)];
+      for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
+        for (int j = 0; j < thisMatrix.GetLength(1); j++) { //j is the column in this matrix
+          toReturn[i, j] = thisMatrix[i, j];
         }
-        for (int j = inMatrix.width; j < inMatrix.width + width; j++) {
-          toReturn.values[i, j] = inMatrix.values[i, j - width];
+        for (int j = inMatrix.GetLength(1); j < inMatrix.GetLength(1) + thisMatrix.GetLength(1); j++) {
+          toReturn[i, j] = inMatrix[i, j - thisMatrix.GetLength(1)];
         }
       }
       return toReturn;
     } else {
-      return this;
+      Debug.LogWarning("Matrices are not of equal height!");
+      return thisMatrix;
     }
   }
 
   //Trims away the excess identity Matrix once you're done inverting it
-  public Matrix deconcatenate(int startColumn) {
-    Matrix toReturn = new Matrix(width - startColumn, height);
-    for (int i = 0; i < height; i++) { //i is the row in this matrix
-      for (int j = startColumn; j < width; j++) {//j is the column in the this matrix
-        toReturn.values[i, j - startColumn] = values[i, j];
+  public static float[,] deconcatenate(this float[,] thisMatrix, int startColumn) {
+    float[,] toReturn = new float[thisMatrix.GetLength(0), thisMatrix.GetLength(1) - startColumn];
+    for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
+      for (int j = startColumn; j < thisMatrix.GetLength(1); j++) { //j is the column in the this matrix
+        toReturn[i, j - startColumn] = thisMatrix[i, j];
       }
     }
     return toReturn;
   }
 
   //Swaps two rows in this Matrix
-  public Matrix swapRow(int row1, int row2) {
-    Matrix toReturn = new Matrix(values);
-    float[] tempRow = new float[width];
-    for (int i = 0; i < width; i++) {
-      tempRow[i] = toReturn.values[row2, i];
-      toReturn.values[row2, i] = toReturn.values[row1, i];
-      toReturn.values[row1, i] = tempRow[i];
+  public static float[,] swapRow(this float[,] thisMatrix, int row1, int row2) {
+    float[,] toReturn = (float[,])thisMatrix.Clone();
+    float[] tempRow = new float[thisMatrix.GetLength(1)];
+    for (int i = 0; i < thisMatrix.GetLength(1); i++) {
+      tempRow[i] = toReturn[row2, i];
+      toReturn[row2, i] = toReturn[row1, i];
+      toReturn[row1, i] = tempRow[i];
     }
     return toReturn;
   }
@@ -185,11 +167,11 @@ public struct Matrix {
   //http://www.vikparuchuri.com/blog/inverting-your-very-own-matrix/
 
   //Checks Matrix to see if only zeros exist at or below row in column
-  public bool checkforAllZeros(int row, int column, out float sum, out int firstnonzeroindex) {
+  public static bool checkforAllZeros(this float[,] thisMatrix, int row, int column, out float sum, out int firstnonzeroindex) {
     sum = 0;
     firstnonzeroindex = -1;
-    for (int i = row; i < height; i++) {
-      sum += values[i, column];
+    for (int i = row; i < thisMatrix.GetLength(0); i++) {
+      sum += thisMatrix[i, column];
       if (firstnonzeroindex == -1 && sum != 0) {
         firstnonzeroindex = i;
       }
@@ -198,19 +180,19 @@ public struct Matrix {
   }
 
   //Inverts this Matrix using Gauss-Jordan Elimination
-  public Matrix invert() {
+  public static float[,] invert(this float[,] thisMatrix) {
     //Add an Identity Matrix on to the side of this Matrix
-    Matrix Inversion = concatenate(new Matrix(width, height, true));
+    float[,] Inversion = thisMatrix.concatenate(identity(thisMatrix.GetLength(0), thisMatrix.GetLength(1)));
 
     //Begin Converting left Matrix to Row-Echelon form
     int i = 0;
-    for (int j = 0; j < width; j++) {
+    for (int j = 0; j < thisMatrix.GetLength(1); j++) {
       //Debug.Log ("On col: "+j+" and row: "+i);
 
       float sum;
       int firstnonzeroindex;
-      if (checkforAllZeros(i, j, out sum, out firstnonzeroindex)) {
-        if (j == width) {
+      if (Inversion.checkforAllZeros(i, j, out sum, out firstnonzeroindex)) {
+        if (j == thisMatrix.GetLength(1)) {
           Debug.Log("wtf is this");
           return Inversion;
         }
@@ -220,21 +202,21 @@ public struct Matrix {
           Inversion = Inversion.swapRow(i, firstnonzeroindex);
         }
 
-        for (int k = 0; k < Inversion.width; k++) {
-          float Normalizer = Inversion.values[i, j];
-          Inversion.values[i, k] /= Normalizer;
+        for (int k = 0; k < Inversion.GetLength(1); k++) {
+          float Normalizer = Inversion[i, j];
+          Inversion[i, k] /= Normalizer;
         }
 
-        for (int q = 0; q < Inversion.height; q++) {
+        for (int q = 0; q < Inversion.GetLength(0); q++) {
           if (q != i) {
-            float scale = Inversion.values[q, j];
-            for (int k = 0; k < Inversion.width; k++) {
-              Inversion.values[q, k] -= scale * Inversion.values[i, k];
+            float scale = Inversion[q, j];
+            for (int k = 0; k < Inversion.GetLength(1); k++) {
+              Inversion[q, k] -= scale * Inversion[i, k];
             }
           }
         }
 
-        if (i == height || j == width) {
+        if (i == thisMatrix.GetLength(0) || j == thisMatrix.GetLength(1)) {
           break;
         }
         i += 1;
@@ -242,7 +224,7 @@ public struct Matrix {
     }
 
     //Trim off the husk Identity left over from the Inversion
-    Inversion = Inversion.deconcatenate(width);
+    Inversion = Inversion.deconcatenate(thisMatrix.GetLength(1));
 
     return Inversion;
   }
@@ -251,8 +233,8 @@ public struct Matrix {
   //Copied from Rosetta Code
   //https://rosettacode.org/wiki/Cholesky_decomposition#C.23
   //
-  public Matrix cholesky() {
-    int n = (int)Mathf.Sqrt(values.Length);
+  public static float[,] cholesky(this float[,] thisMatrix) {
+    int n = (int)Mathf.Sqrt(thisMatrix.Length);
 
     float[,] ret = new float[n, n];
     for (int r = 0; r < n; r++)
@@ -262,26 +244,26 @@ public struct Matrix {
           for (int j = 0; j < c; j++) {
             sum += ret[c, j] * ret[c, j];
           }
-          ret[c, c] = Mathf.Sqrt(values[c, c] - sum);
+          ret[c, c] = Mathf.Sqrt(thisMatrix[c, c] - sum);
         } else {
           float sum = 0;
           for (int j = 0; j < c; j++)
             sum += ret[r, j] * ret[c, j];
-          ret[r, c] = 1.0f / ret[c, c] * (values[r, c] - sum);
+          ret[r, c] = 1.0f / ret[c, c] * (thisMatrix[r, c] - sum);
         }
       }
-    return new Matrix(ret);
+    return ret;
   }
 
   //Prints this Matrix out all pretty-like
-  public override string ToString() {
+  public static string MatrixToString(this float[,] thisMatrix) {
     string MatrixString = "[ ";
-    for (int i = 0; i < height; i++) {
-      for (int j = 0; j < width; j++) {
-        MatrixString += values[i, j];
-        if (i == height - 1 && j == width - 1) {
+    for (int i = 0; i < thisMatrix.GetLength(0); i++) {
+      for (int j = 0; j < thisMatrix.GetLength(1); j++) {
+        MatrixString += thisMatrix[i, j];
+        if (i == thisMatrix.GetLength(0) - 1 && j == thisMatrix.GetLength(1) - 1) {
           MatrixString += " ]";
-        } else if (j == width - 1) {
+        } else if (j == thisMatrix.GetLength(1) - 1) {
           MatrixString += ",\n  ";
         } else {
           MatrixString += ", ";
