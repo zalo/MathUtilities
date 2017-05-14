@@ -53,6 +53,10 @@ Demonstrates how to set up a shader to project a texture onto scene geometry usi
 Uses a compute shader to draw arbitrary 2D Minkowski "Differences" in real time.  The Minkowski Sum (and its modification, the "Minkowski Difference") is a core operation in collision detection.  This concept allows for a fully generalized way of determining whether any two objects are intersecting, and what the minimum translation is that separates them.  The key is determining whether the origin (of the coordinate system used in the operation) is inside of the resulting Minkowski Difference shape.   GJK is a collision detection technique that implements this check quickly for convex objects, with only a few samples of the implicit Minkowski Difference.
 
 
+### Bidirectional Raycasting
+Operates like a standard raycast, but returns both entry and exit information.  Useful for building wires that wrap around the environment and bullet entry/exit effects.
+
+
 ### Thick Tesellated Plane Generator
 Useful for generating solid meshes that are essentially deformed planes (shapes that are common in optics).
 
