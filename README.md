@@ -65,6 +65,10 @@ Useful for generating solid meshes that are essentially deformed planes (shapes 
 Useful for generating capsule meshes with an arbitrary length and radius.
 
 
+### Raytraced Sphere
+A little shader that raytraces a pixel-perfect sphere on your object/billboard, for when you want to be pixel-bound rather than vertex bound...
+
+
 ### Bundle Adjustment
 My attempts at implementing [Bundle Adjustment](https://en.wikipedia.org/wiki/Bundle_adjustment) (an algorithm which attempts to solve for the relative motion between two camera images, given the motion of a set of feature-points between the images).  It will converge when either position or rotation adjustment is applied, but not when they are applied simultaneously (not sure why...)
 
