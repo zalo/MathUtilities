@@ -69,6 +69,10 @@ Useful for generating capsule meshes with an arbitrary length and radius.
 A little shader that raytraces a pixel-perfect sphere on your object/billboard, for when you want to be pixel-bound rather than vertex bound...
 
 
+### [Haptic Probe](http://i.imgur.com/Ljy3U8y.gif)
+An example implementing a haptic probe, where the force on the effector of the haptic controller is equal to the linear and angular displacement of the green cube to the gray one.
+
+
 ### Bundle Adjustment
 My attempts at implementing [Bundle Adjustment](https://en.wikipedia.org/wiki/Bundle_adjustment) (an algorithm which attempts to solve for the relative motion between two camera images, given the motion of a set of feature-points between the images).  It will converge when either position or rotation adjustment is applied, but not when they are applied simultaneously (not sure why...)
 
