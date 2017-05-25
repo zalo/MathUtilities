@@ -1,6 +1,4 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "Unlit/UnlitProjectionSurface" {
+﻿Shader "Unlit/UnlitProjectionSurface" {
 	Properties {
 		_MainTex ("Texture", 2D) = "white" {}
 	}
