@@ -554,7 +554,6 @@ GameObject:
   m_Component:
   - component: {fileID: 872994434}
   - component: {fileID: 872994436}
-  - component: {fileID: 872994435}
   m_Layer: 0
   m_Name: LeftCam
   m_TagString: MainCamera
@@ -575,13 +574,6 @@ Transform:
   m_Father: {fileID: 1997123323}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!81 &872994435
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 872994433}
-  m_Enabled: 1
 --- !u!20 &872994436
 Camera:
   m_ObjectHideFlags: 0
@@ -987,7 +979,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   adjustPosition: 1
-  adjustRotation: 0
+  adjustRotation: 1
   features:
   - {fileID: 678249442}
   - {fileID: 230370962}
@@ -1072,10 +1064,10 @@ TextMesh:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1493127823}
-  m_Text: "Try dragging the \"AdjustingCamera\" \nout of place.  Watch it solve for
-    the\nposition that minimizes the distance \nbetween rays.\n\nNote that this one
-    is fully constrained.\nUnfortunately, it does not converge if\nboth position and
-    rotation are active..."
+  m_Text: "Try dragging the \"AligningCam\" \nout of place.  Watch it solve for the\nposition
+    + rotation that minimizes the \ndistance between rays.\n\nNote that this one is
+    fully constrained.\nObserve how it converges from most \nmoderate positional and
+    rotational \ndisplacements, but not all."
   m_OffsetZ: 0
   m_CharacterSize: 0.006
   m_LineSpacing: 1

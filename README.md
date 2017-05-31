@@ -74,7 +74,7 @@ An example implementing a haptic probe, where the force on the effector of the h
 
 
 ### Bundle Adjustment
-My attempts at implementing [Bundle Adjustment](https://en.wikipedia.org/wiki/Bundle_adjustment) (an algorithm which attempts to solve for the relative motion between two camera images, given the motion of a set of feature-points between the images).  It will converge when either position or rotation adjustment is applied, but not when they are applied simultaneously (not sure why...)
+My attempts at implementing [Bundle Adjustment](https://en.wikipedia.org/wiki/Bundle_adjustment) (an algorithm which attempts to solve for the relative motion between two camera images, given the motion of a set of feature-points between the images). The stereo-case now converges to a unique 6-DoF pose (in most situations).  This implementation is highly parallelizable.
 
 
 ### Torque Extension for HingeJoints
