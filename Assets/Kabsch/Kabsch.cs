@@ -67,7 +67,7 @@ public class KabschSolver {
                        Vector3.Dot(R[1], A[1]) +
                        Vector3.Dot(R[2], A[2]) + 0.000000001f));
 
-      float w = Mathf.Clamp(omega.magnitude * 100f, -20f, 20f); //How aggressive each iteration should be
+      float w = Mathf.Clamp(omega.magnitude * Mathf.Rad2Deg, -20f, 20f); //How aggressive each iteration should be
       if (w < 0.000000001f)
         break;
       q = Quaternion.AngleAxis(w, (1f / w) * omega) * q;

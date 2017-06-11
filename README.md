@@ -41,6 +41,9 @@ A set of constraint functions that can be used to build [an iterative inverse ki
 
 ## Other experiments:
 
+### Linear Assignment
+A port of Roy Jonker's famous solution to the [Linear Assignment Problem](https://en.wikipedia.org/wiki/Assignment_problem).  Allows you to take two arbitrary lists of objects (with a cost to pair each of them to each other), and to find the globally optimal pairing betweeing your lists.  Extremely handy.
+
 ### Linear Blend Skinning
 A reference implementation that demonstrates how to apply bone motions to a model using the data contained within a skinned mesh renderer.   As they say, there is more than one way to skin a mesh.
 
