@@ -50,33 +50,33 @@ public class KabschSolver {
       extractRotation(TransposeMultSubtract(inPoints, refPoints, inCentroid, refCentroid, DataCovariance), ref OptimalRotation);
     }
 
-    return Matrix4x4.TRS(refCentroid, Quaternion.identity, Vector3.one) *
-           Matrix4x4.TRS(Vector3.zero, OptimalRotation, Vector3.one) *
-           Matrix4x4.TRS(-inCentroid, Quaternion.identity, Vector3.one);
+    return Matrix4x4.TRS(refCentroid,  Quaternion.identity, Vector3.one) *
+           Matrix4x4.TRS(Vector3.zero, OptimalRotation,     Vector3.one) *
+           Matrix4x4.TRS(-inCentroid,  Quaternion.identity, Vector3.one);
   }
 
   //https://animation.rwth-aachen.de/media/papers/2016-MIG-StableRotation.pdf
   //Iteratively apply torque to the basis using Cross products (in place of SVD)
   void extractRotation(Vector3[] A, ref Quaternion q) {
-    for (int iter = 0; iter < 3; iter++) {
-      Vector3[] R = MatrixFromQuaternion(q, QuatBasis);
-      Vector3 omega = (Vector3.Cross(R[0], A[0]) +
-                       Vector3.Cross(R[1], A[1]) +
-                       Vector3.Cross(R[2], A[2])) *
-       (1f / Mathf.Abs(Vector3.Dot(R[0], A[0]) +
-                       Vector3.Dot(R[1], A[1]) +
-                       Vector3.Dot(R[2], A[2]) + 0.000000001f));
+    for (int iter = 0; iter < 9; iter++) {
+      q.FillMatrixFromQuaternion(ref QuatBasis);
+      Vector3 omega = (Vector3.Cross(QuatBasis[0], A[0]) +
+                       Vector3.Cross(QuatBasis[1], A[1]) +
+                       Vector3.Cross(QuatBasis[2], A[2])) *
+       (1f / Mathf.Abs(Vector3.Dot(QuatBasis[0], A[0]) +
+                       Vector3.Dot(QuatBasis[1], A[1]) +
+                       Vector3.Dot(QuatBasis[2], A[2]) + 0.000000001f));
 
       float w = Mathf.Clamp(omega.magnitude * Mathf.Rad2Deg, -20f, 20f); //How aggressive each iteration should be
       if (w < 0.000000001f)
         break;
       q = Quaternion.AngleAxis(w, (1f / w) * omega) * q;
-      q = Quaternion.Lerp(q, q, 0f);//Normalizes the Quaternion; critical for error suppression
+      q = Quaternion.Lerp(q, q, 0f); //Normalizes the Quaternion; critical for error suppression
     }
   }
 
   //Calculate Covariance Matrices --------------------------------------------------
-  Vector3[] TransposeMultSubtract(Vector3[] vec1, Vector3[] vec2, Vector3 vec1Centroid, Vector3 vec2Centroid, Vector3[] covariance) {
+  public static Vector3[] TransposeMultSubtract(Vector3[] vec1, Vector3[] vec2, Vector3 vec1Centroid, Vector3 vec2Centroid, Vector3[] covariance) {
     for (int i = 0; i < 3; i++) { //i is the row in this matrix
       covariance[i] = Vector3.zero;
       for (int j = 0; j < 3; j++) {//j is the column in the other matrix
@@ -87,13 +87,6 @@ public class KabschSolver {
     }
     return covariance;
   }
-
-  public static Vector3[] MatrixFromQuaternion(Quaternion q, Vector3[] covariance) {
-    covariance[0] = q * Vector3.right;
-    covariance[1] = q * Vector3.up;
-    covariance[2] = q * Vector3.forward;
-    return covariance;
-  }
 }
 
 public static class FromMatrixExtension {
@@ -101,5 +94,10 @@ public static class FromMatrixExtension {
   public static Quaternion GetQuaternion(this Matrix4x4 m) {
     if (m.GetColumn(2) == m.GetColumn(1)) { return Quaternion.identity; }
     return Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1));
+  }
+  public static void FillMatrixFromQuaternion(this Quaternion q, ref Vector3[] covariance) {
+    covariance[0] = q * Vector3.right;
+    covariance[1] = q * Vector3.up;
+    covariance[2] = q * Vector3.forward;
   }
 }
