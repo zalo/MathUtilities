@@ -4,8 +4,10 @@ using UnityEngine;
 public class AverageQuaternion : MonoBehaviour {
   QuaternionAverager averageQuat = new QuaternionAverager();
 
-  //Calculate the Kabsch Transform and Apply it to the input points
+  //Calculate the Average Quaternion and draw a coordinate basis
   void Update() {
+    //Average this transform's rotation with the identity rotation
+    //(Not terribly impressive, but it serves as a basic unit test)
     averageQuat.Add(Quaternion.identity);
     averageQuat.Add(transform.rotation);
 
@@ -19,6 +21,7 @@ public class AverageQuaternion : MonoBehaviour {
   }
 }
 
+//Calculate Non-Weighted Averages of quaternions via a hack using the kabsch solver 
 public class QuaternionAverager {
   List<Vector3> inBases = new List<Vector3>();
   List<Vector3> refBases = new List<Vector3>();

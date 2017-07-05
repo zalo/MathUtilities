@@ -8,6 +8,7 @@ A grab bag of some of the neat math and physics tricks that I've amassed over th
 <img src="http://i34.photobucket.com/albums/d144/Zalo10/Kabsch_zpshxn8kz7p.gif">
 
 An algorithm that can take in an arbitrary set of point-pairs and find the globally optimal translation and rotation to minimize the distance between those point pairs.  Incredibly useful, and very cheap.   Uses Matthias Muller's iterative optimal rotation solver in place of SVD, as outlined here: https://animation.rwth-aachen.de/media/papers/2016-MIG-StableRotation.pdf
+Update: Added an example for averaging arbitrary numbers of quaternions; possibly more accurate than a normalized lerp (averaging the quaternion components in linear space and then normalizing).
 
 
 ## [Stereographic/Fisheye Camera](https://en.wikipedia.org/wiki/Stereographic_projection)
@@ -41,8 +42,13 @@ A set of constraint functions that can be used to build [an iterative inverse ki
 
 ## Other experiments:
 
+### Nelder-Mead (Amoeba) Numerical Optimizer
+A general, n-dimensional implementation of [Nelder and Mead's numerical optimization method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) for minimizing cost functions.  This is a popular optimization technique for problems with high-dimensionality and no gradient information.
+
+
 ### Linear Assignment
-A port of Roy Jonker's famous solution to the [Linear Assignment Problem](https://en.wikipedia.org/wiki/Assignment_problem).  Allows you to take two arbitrary lists of objects (with a cost to pair each of them to each other), and to find the globally optimal pairing betweeing your lists.  Extremely handy.
+A port of Roy Jonker's famous solution to the [Linear Assignment Problem](https://en.wikipedia.org/wiki/Assignment_problem).  Allows you to take two arbitrary lists of objects (with a cost to pair objects in each of them to each other), and to find the globally optimal pairing betweeing objects in these lists.  Extremely handy.
+
 
 ### Linear Blend Skinning
 A reference implementation that demonstrates how to apply bone motions to a model using the data contained within a skinned mesh renderer.   As they say, there is more than one way to skin a mesh.
