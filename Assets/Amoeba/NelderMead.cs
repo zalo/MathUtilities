@@ -35,14 +35,7 @@ public class NelderMead {
     //And all subsequent vertices are translated "initialSimplexSize"
     //along just that dimension.  This is a "Right Angle" Simplex
     simplexVertices = new List<Vertex>(initialVertex.Length + 1);
-    simplexVertices.Add(new Vertex(initialVertex, costFunc, 0));
-    for (int i = 0; i < initialVertex.Length; i++) {
-      float[] vertexCoordinate = new float[initialVertex.Length];
-      Array.Copy(initialVertex, vertexCoordinate, initialVertex.Length);
-      vertexCoordinate[i] += initialSimplexSize;
-
-      simplexVertices.Add(new Vertex(vertexCoordinate, costFunc, i + 1));
-    }
+    constructRightAngleSimplex(initialVertex, initialSimplexSize);
     centroidCoordinate = new float[simplexVertices[0].coordinates.Length];
 
     //Sort the list of vertices in our simplex by their costs (Smallest to Largest Cost)
@@ -113,6 +106,34 @@ public class NelderMead {
     simplexVertices.Sort((x, y) => x.cost.CompareTo(y.cost));
   }
 
+  //This should be done when you know that the optimum of a cost function has changed!
+  public void recalculateSimplexCosts() {
+    for (int i = 0; i < simplexVertices.Count; i++) {
+      simplexVertices[i] = new Vertex(simplexVertices[i].coordinates, costFunc, simplexVertices[i].originalIndex);
+    }
+
+    //Sort the list of vertices in our simplex by their costs (Smallest to Largest Cost)
+    simplexVertices.Sort((x, y) => x.cost.CompareTo(y.cost));
+  }
+
+  //This creates a right-angle simplex around the "initial vertex" position
+  //This can be called to "reinitialize" the solver while it is running to
+  //fix: it getting stuck, pre-converged simplices, or degenerate simplices.
+  public void constructRightAngleSimplex(float[] initialVertex, float initialSimplexSize) {
+    simplexVertices.Clear();
+    simplexVertices.Add(new Vertex(initialVertex, costFunc, 0));
+    for (int i = 0; i < initialVertex.Length; i++) {
+      float[] vertexCoordinate = new float[initialVertex.Length];
+      Array.Copy(initialVertex, vertexCoordinate, initialVertex.Length);
+      vertexCoordinate[i] += initialSimplexSize;
+
+      simplexVertices.Add(new Vertex(vertexCoordinate, costFunc, i + 1));
+    }
+
+    //Sort the list of vertices in our simplex by their costs (Smallest to Largest Cost)
+    simplexVertices.Sort((x, y) => x.cost.CompareTo(y.cost));
+  }
+
   //Simple Container Struct that stores coordinates and an associated cost
   public struct Vertex {
     public float[] coordinates;
@@ -123,6 +144,10 @@ public class NelderMead {
       coordinates = Coordinates;
       cost = costFunction(coordinates);
       originalIndex = index;
+    }
+
+    public float recalculateCost(Func<float[], float> costFunction) {
+      return costFunction(coordinates);
     }
   }
 }

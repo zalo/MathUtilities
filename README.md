@@ -43,7 +43,7 @@ A set of constraint functions that can be used to build [an iterative inverse ki
 ## Other experiments:
 
 ### Nelder-Mead (Amoeba) Numerical Optimizer
-A general, n-dimensional implementation of [Nelder and Mead's numerical optimization method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) for minimizing cost functions.  This is a popular optimization technique for problems with high-dimensionality and no gradient information.
+A general, n-dimensional implementation of [Nelder and Mead's numerical optimization method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) for minimizing cost functions.  This is a popular optimization technique for problems with high-dimensionality and no gradient information.  Included is an example of optimizing a 5-DoF IK system (far less efficient than CCDIK, but more flexible overall).
 
 
 ### Linear Assignment
