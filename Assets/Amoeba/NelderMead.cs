@@ -14,22 +14,25 @@ public class NelderMead {
   public NelderMead(
     float[] initialVertex,
     Func<float[], float> costFunction,
-    float initialSimplexSize = 1f,
-    float reflectionCoefficient = 1f,
-    float contractionCoefficient = 0.5f,
-    float expansionCoefficient = 2f,
-    float shrinkageCoefficient = 0.5f) {
+    float initialSimplexSize = 1f) {
 
     //Assign the cost function; this function takes in a coordinate in parameter space
     //And outputs the "cost" associated with this parameter; the solver will try to minimize the cost
     costFunc = costFunction;
 
-    //These are the amounts the simplex moves at each step of the optimization process
-    //The bigger these numbers, the more aggressive the solver will be
-    alpha = reflectionCoefficient;
-    beta = contractionCoefficient;
-    gamma = expansionCoefficient;
-    delta = shrinkageCoefficient;
+    //Below are the amounts the simplex moves at each step of the optimization process
+    //These values are chosen according to: "Implementing the Nelder-Mead simplex algorithm with adaptive parameters" by Fuchang Gao and Lixing Han
+    //https://pdfs.semanticscholar.org/15b4/c4aa7437df4d032c6ee6ce98d6030dd627be.pdf
+    //This helps with high-dimensional (>10 dimensions) optimization
+
+    //Reflection
+    alpha = 1f;
+    //Contraction
+    beta = 0.75f - (1f / (2 * initialVertex.Length));
+    //Expansion
+    gamma = 1f + (2f / initialVertex.Length);
+    //Shrink
+    delta = 1f - (1f / initialVertex.Length);
 
     //Create Initial Simplex: Make the first vertex the initialVertex
     //And all subsequent vertices are translated "initialSimplexSize"
