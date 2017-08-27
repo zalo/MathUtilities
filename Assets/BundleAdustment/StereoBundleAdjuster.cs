@@ -4,68 +4,51 @@ using UnityEngine.Profiling;
 public class StereoBundleAdjuster : MonoBehaviour {
   public Transform[] features;
 
-  public Transform camera11;
-  Vector3[] rayDirections11;
-  public Transform camera12;
-  Vector3[] rayDirections12;
-
-  public Transform camera21;
-  Vector3[] rayDirections21;
-  public Transform camera22;
-  Vector3[] rayDirections22;
+  public Transform[] cameras;
+  Vector3[][] rayDirections;
 
   KabschSolver solver = new KabschSolver();
   Vector3[] inPoints, refPoints;
 
   void Start() {
-    rayDirections11 = new Vector3[features.Length];
-    rayDirections12 = new Vector3[features.Length];
-    rayDirections21 = new Vector3[features.Length];
-    rayDirections22 = new Vector3[features.Length];
+    inPoints = new Vector3[features.Length * 4];
+    refPoints = new Vector3[features.Length * 4];
+    rayDirections = new Vector3[4][];
 
-    inPoints = new Vector3[features.Length*4];
-    refPoints = new Vector3[features.Length*4];
+    for (int cameraIndex = 0; cameraIndex < 4; cameraIndex++) {
+      rayDirections[cameraIndex] = new Vector3[features.Length];
 
-    for (int i = 0; i < features.Length; i++) {
-      rayDirections11[i] = camera11.InverseTransformPoint(features[i].position).normalized;
-      rayDirections12[i] = camera12.InverseTransformPoint(features[i].position).normalized;
-      rayDirections21[i] = camera21.InverseTransformPoint(features[i].position).normalized;
-      rayDirections22[i] = camera22.InverseTransformPoint(features[i].position).normalized;
+      for (int i = 0; i < features.Length; i++) {
+        rayDirections[cameraIndex][i] = cameras[cameraIndex].InverseTransformPoint(features[i].position).normalized;
+      }
     }
   }
 
   void Update() {
-    for (int i = 0; i < features.Length; i++) {
-      Debug.DrawLine(camera11.position, camera11.TransformPoint(rayDirections11[i]));
-      Debug.DrawLine(camera12.position, camera12.TransformPoint(rayDirections12[i]));
-      Debug.DrawLine(camera21.position, camera21.TransformPoint(rayDirections21[i]));
-      Debug.DrawLine(camera22.position, camera22.TransformPoint(rayDirections22[i]));
+    for (int cameraIndex = 0; cameraIndex < 4; cameraIndex++) {
+      for (int i = 0; i < features.Length; i++) {
+        Debug.DrawLine(cameras[cameraIndex].position, cameras[cameraIndex].TransformPoint(rayDirections[cameraIndex][i]));
+      }
     }
 
     Profiler.BeginSample("Bundle Adjustment");
     for (int iteration = 0; iteration < 1; iteration++) {
       for (int i = 0; i < features.Length; i++) {
-        Vector3 pointLineOne, pointLineTwo;
-        Displacement(camera11.position, camera11.TransformPoint(rayDirections11[i]), camera21.position, camera21.TransformPoint(rayDirections21[i]), out pointLineOne, out pointLineTwo);
-        inPoints[(i * 4)] = pointLineOne; refPoints[(i * 4)] = pointLineTwo;
-        Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
+        for (int cameraIndex = 0; cameraIndex < 4; cameraIndex++) {
+          Vector3 pointLineOne, pointLineTwo;
+          Displacement(cameras[(cameraIndex / 2)    ].position, cameras[(cameraIndex / 2)    ].TransformPoint(rayDirections[(cameraIndex / 2)    ][i]),
+                       cameras[(cameraIndex % 2) + 2].position, cameras[(cameraIndex % 2) + 2].TransformPoint(rayDirections[(cameraIndex % 2) + 2][i]), out pointLineOne, out pointLineTwo);
 
-        Displacement(camera11.position, camera11.TransformPoint(rayDirections11[i]), camera22.position, camera22.TransformPoint(rayDirections22[i]), out pointLineOne, out pointLineTwo);
-        inPoints[(i * 4) + 1] = pointLineOne; refPoints[(i * 4) + 1] = pointLineTwo;
-        Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
+          inPoints [(i * cameras.Length) + cameraIndex] = pointLineOne;
+          refPoints[(i * cameras.Length) + cameraIndex] = pointLineTwo;
 
-        Displacement(camera12.position, camera12.TransformPoint(rayDirections12[i]), camera21.position, camera21.TransformPoint(rayDirections21[i]), out pointLineOne, out pointLineTwo);
-        inPoints[(i * 4) + 2] = pointLineOne; refPoints[(i * 4) + 2] = pointLineTwo;
-        Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
-
-        Displacement(camera12.position, camera12.TransformPoint(rayDirections12[i]), camera22.position, camera22.TransformPoint(rayDirections22[i]), out pointLineOne, out pointLineTwo);
-        inPoints[(i * 4) + 3] = pointLineOne; refPoints[(i * 4) + 3] = pointLineTwo;
-        Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
+          Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
+        }
       }
 
       Matrix4x4 iterationStep = solver.SolveKabsch(refPoints, inPoints, true);
-      camera21.parent.position += iterationStep.GetVector3();
-      camera21.parent.rotation = iterationStep.GetQuaternion() * camera21.parent.rotation;
+      cameras[2].parent.position += iterationStep.GetVector3();
+      cameras[2].parent.rotation = iterationStep.GetQuaternion() * cameras[2].parent.rotation;
     }
     Profiler.EndSample();
   }
