@@ -42,7 +42,7 @@ public class VerletCloth : MonoBehaviour {
     clothVerts[10] = prevClothVerts[10] = anchor2.position;
 
     //Constraint Resolution
-    Verlet.resolveDistanceConstraints(constraints, ref clothVerts, 1, false);
+    Verlet.resolveDistanceConstraints(constraints, ref clothVerts, 1);
 
     //Graphics
     clothMesh.vertices = clothVerts;

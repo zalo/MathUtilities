@@ -93,31 +93,30 @@ public static class Verlet {
       equality = EqualityConstraint;
     }
 
-    public void ResolveConstraint(ref Vector3[] vertices) {
+    public void ResolveConstraint(Vector3[] vertices, ref Vector4[] accumulatedDisplacements) {
       if (equality || (vertices[index1] - vertices[index2]).sqrMagnitude > sqrDistance) {
         Vector3 offset = (vertices[index2] - vertices[index1]);
         offset *= sqrDistance / (Vector3.Dot(offset, offset) + sqrDistance) - 0.5f;
-        vertices[index1] -= offset;
-        vertices[index2] += offset;
+        accumulatedDisplacements[index1] += new Vector4(-offset.x, -offset.y, -offset.z, 1f);
+        accumulatedDisplacements[index2] += new Vector4(offset.x, offset.y, offset.z, 1f);
       }
     }
   }
 
-  public static void resolveDistanceConstraints(List<DistConstraint> constraints, ref Vector3[] verts, int iterations = 3, bool randomize = false) {
-    //Knuth Shuffle; randomize the order of the constraint resolution
-    //Trades smoothness for stiffness
-    if (randomize) {
-      for (int t = 0; t < constraints.Count; t++) {
-        DistConstraint tmp = constraints[t];
-        int r = Random.Range(t, constraints.Count);
-        constraints[t] = constraints[r];
-        constraints[r] = tmp;
-      }
+  public static void resolveDistanceConstraints(List<DistConstraint> constraints, ref Vector3[] verts, int iterations = 3) {
+    Vector4[] accumulatedDisplacements = new Vector4[verts.Length];
+    for (int j = 0; j < verts.Length; j++) {
+      accumulatedDisplacements[j] = Vector4.zero;
     }
 
     for (int i = 0; i < iterations; i++) {
       for (int j = 0; j < constraints.Count; j++) {
-        constraints[j].ResolveConstraint(ref verts);
+        constraints[j].ResolveConstraint(verts, ref accumulatedDisplacements);
+      }
+
+      for (int j = 0; j < verts.Length; j++) {
+        if (accumulatedDisplacements[j] != Vector4.zero) { accumulatedDisplacements[j] /= accumulatedDisplacements[j][3]; }
+        verts[j] += new Vector3(accumulatedDisplacements[j][0], accumulatedDisplacements[j][1], accumulatedDisplacements[j][2]);
       }
     }
   }

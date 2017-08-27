@@ -393,7 +393,7 @@ MonoBehaviour:
   groundPlane: {fileID: 1167918773}
   inflationAmount: 0.75
   solverIterations: 1
-  transformFollowsRotation: 0
+  transformFollowsRotation: 1
 --- !u!23 &736096484
 MeshRenderer:
   m_ObjectHideFlags: 0

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class Softbody : MonoBehaviour {
   public Transform anchor;
   public Transform groundPlane;
-  [Range(0.3f,1.5f)]
+  [Range(0.3f, 2f)]
   public float inflationAmount = 0.8f;
   [Range(1, 10)]
   public int solverIterations = 1;
