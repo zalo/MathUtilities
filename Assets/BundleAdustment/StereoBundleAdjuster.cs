@@ -1,9 +1,7 @@
 ﻿using UnityEngine;
+using UnityEngine.Profiling;
 
 public class StereoBundleAdjuster : MonoBehaviour {
-  public bool adjustPosition = true;
-  public bool adjustRotation = false;
-
   public Transform[] features;
 
   public Transform camera11;
@@ -16,15 +14,17 @@ public class StereoBundleAdjuster : MonoBehaviour {
   public Transform camera22;
   Vector3[] rayDirections22;
 
-  Vector3 currentDeltaPos;
-  Vector4 currentDeltaRot;
-  Vector3 centroid;
+  KabschSolver solver = new KabschSolver();
+  Vector3[] inPoints, refPoints;
 
   void Start() {
     rayDirections11 = new Vector3[features.Length];
     rayDirections12 = new Vector3[features.Length];
     rayDirections21 = new Vector3[features.Length];
     rayDirections22 = new Vector3[features.Length];
+
+    inPoints = new Vector3[features.Length*4];
+    refPoints = new Vector3[features.Length*4];
 
     for (int i = 0; i < features.Length; i++) {
       rayDirections11[i] = camera11.InverseTransformPoint(features[i].position).normalized;
@@ -35,73 +35,49 @@ public class StereoBundleAdjuster : MonoBehaviour {
   }
 
   void Update() {
-    currentDeltaPos = Vector3.zero;
-    currentDeltaRot = Vector4.zero;
-    centroid = Vector3.zero;
-
-    for (int i = 0; i < features.Length; i++) {
-      Centroid(camera21.parent.position, camera11.position, camera11.TransformPoint(rayDirections11[i]), camera21.position, camera21.TransformPoint(rayDirections21[i]), ref centroid);
-      Centroid(camera21.parent.position, camera11.position, camera11.TransformPoint(rayDirections11[i]), camera22.position, camera22.TransformPoint(rayDirections22[i]), ref centroid);
-      Centroid(camera21.parent.position, camera12.position, camera12.TransformPoint(rayDirections12[i]), camera21.position, camera21.TransformPoint(rayDirections21[i]), ref centroid);
-      Centroid(camera21.parent.position, camera12.position, camera12.TransformPoint(rayDirections12[i]), camera22.position, camera22.TransformPoint(rayDirections22[i]), ref centroid);
-    }
-
-    centroid /= features.Length * 4f;
-
     for (int i = 0; i < features.Length; i++) {
       Debug.DrawLine(camera11.position, camera11.TransformPoint(rayDirections11[i]));
       Debug.DrawLine(camera12.position, camera12.TransformPoint(rayDirections12[i]));
       Debug.DrawLine(camera21.position, camera21.TransformPoint(rayDirections21[i]));
       Debug.DrawLine(camera22.position, camera22.TransformPoint(rayDirections22[i]));
-
-      Displacement(centroid, camera11.position, camera11.TransformPoint(rayDirections11[i]), camera21.position, camera21.TransformPoint(rayDirections21[i]), ref currentDeltaPos, ref currentDeltaRot);
-      Displacement(centroid, camera11.position, camera11.TransformPoint(rayDirections11[i]), camera22.position, camera22.TransformPoint(rayDirections22[i]), ref currentDeltaPos, ref currentDeltaRot);
-      Displacement(centroid, camera12.position, camera12.TransformPoint(rayDirections12[i]), camera21.position, camera21.TransformPoint(rayDirections21[i]), ref currentDeltaPos, ref currentDeltaRot);
-      Displacement(centroid, camera12.position, camera12.TransformPoint(rayDirections12[i]), camera22.position, camera22.TransformPoint(rayDirections22[i]), ref currentDeltaPos, ref currentDeltaRot);
     }
 
-    camera21.parent.position -= (currentDeltaPos / features.Length); //This is 4x what it should be!  Helps with convergence speed.
+    Profiler.BeginSample("Bundle Adjustment");
+    for (int iteration = 0; iteration < 1; iteration++) {
+      for (int i = 0; i < features.Length; i++) {
+        Vector3 pointLineOne, pointLineTwo;
+        Displacement(camera11.position, camera11.TransformPoint(rayDirections11[i]), camera21.position, camera21.TransformPoint(rayDirections21[i]), out pointLineOne, out pointLineTwo);
+        inPoints[(i * 4)] = pointLineOne; refPoints[(i * 4)] = pointLineTwo;
+        Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
 
-    currentDeltaRot = (currentDeltaRot / (features.Length * 4f));
-    Quaternion rot = new Quaternion(currentDeltaRot.x, currentDeltaRot.y, currentDeltaRot.z, currentDeltaRot.w);
-    if (adjustRotation) {
-      camera21.parent.RotateAroundPivot(centroid, rot);
+        Displacement(camera11.position, camera11.TransformPoint(rayDirections11[i]), camera22.position, camera22.TransformPoint(rayDirections22[i]), out pointLineOne, out pointLineTwo);
+        inPoints[(i * 4) + 1] = pointLineOne; refPoints[(i * 4) + 1] = pointLineTwo;
+        Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
+
+        Displacement(camera12.position, camera12.TransformPoint(rayDirections12[i]), camera21.position, camera21.TransformPoint(rayDirections21[i]), out pointLineOne, out pointLineTwo);
+        inPoints[(i * 4) + 2] = pointLineOne; refPoints[(i * 4) + 2] = pointLineTwo;
+        Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
+
+        Displacement(camera12.position, camera12.TransformPoint(rayDirections12[i]), camera22.position, camera22.TransformPoint(rayDirections22[i]), out pointLineOne, out pointLineTwo);
+        inPoints[(i * 4) + 3] = pointLineOne; refPoints[(i * 4) + 3] = pointLineTwo;
+        Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
+      }
+
+      Matrix4x4 iterationStep = solver.SolveKabsch(refPoints, inPoints, true);
+      camera21.parent.position += iterationStep.GetVector3();
+      camera21.parent.rotation = iterationStep.GetQuaternion() * camera21.parent.rotation;
     }
+    Profiler.EndSample();
   }
 
-  public void Centroid(Vector3 parentOrigin, Vector3 camOneOrigin, Vector3 camOneDirection, Vector3 camTwoOrigin, Vector3 camTwoDirection, ref Vector3 centroid) {
+  public void Displacement(Vector3 camOneOrigin, Vector3 camOneDirection, Vector3 camTwoOrigin, Vector3 camTwoDirection, out Vector3 pointLineOne, out Vector3 pointLineTwo) {
     float timeLineOne, timeLineTwo;
     BundleAdjuster.line2lineDisplacement(camOneOrigin, camOneDirection, camTwoOrigin, camTwoDirection, out timeLineOne, out timeLineTwo);
 
     //Take the abs of the times so they can't intersect behind the camera
     timeLineOne = Mathf.Abs(timeLineOne); timeLineTwo = Mathf.Abs(timeLineTwo);
 
-    Vector3 pointLineOne = Vector3.LerpUnclamped(camOneOrigin, camOneDirection, timeLineOne);
-    Vector3 pointLineTwo = Vector3.LerpUnclamped(camTwoOrigin, camTwoDirection, timeLineTwo);
-
-    centroid += (pointLineOne + pointLineTwo) * 0.5f;
-  }
-
-  public void Displacement(Vector3 rotationPivot, Vector3 camOneOrigin, Vector3 camOneDirection, Vector3 camTwoOrigin, Vector3 camTwoDirection, ref Vector3 DisplacementSum, ref Vector4 QuaternionSum) {
-    float timeLineOne, timeLineTwo;
-    BundleAdjuster.line2lineDisplacement(camOneOrigin, camOneDirection, camTwoOrigin, camTwoDirection, out timeLineOne, out timeLineTwo);
-
-    //Take the abs of the times so they can't intersect behind the camera
-    timeLineOne = Mathf.Abs(timeLineOne); timeLineTwo = Mathf.Abs(timeLineTwo);
-
-    Vector3 pointLineOne = Vector3.LerpUnclamped(camOneOrigin, camOneDirection, timeLineOne);
-    Vector3 pointLineTwo = Vector3.LerpUnclamped(camTwoOrigin, camTwoDirection, timeLineTwo);
-
-    Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
-    if (adjustPosition) {
-      DisplacementSum += (pointLineTwo - pointLineOne) / 2f;
-    }
-
-    Vector3 oldDisplacement = rotationPivot - pointLineTwo;
-    Vector3 newDisplacement = rotationPivot - pointLineOne;
-    Quaternion rotDis = Quaternion.FromToRotation(oldDisplacement, newDisplacement);
-    if (adjustRotation) {
-      QuaternionSum += new Vector4(rotDis.x, rotDis.y, rotDis.z, rotDis.w);
-    }
+    pointLineOne = Vector3.LerpUnclamped(camOneOrigin, camOneDirection, timeLineOne);
+    pointLineTwo = Vector3.LerpUnclamped(camTwoOrigin, camTwoDirection, timeLineTwo);
   }
 }

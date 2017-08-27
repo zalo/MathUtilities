@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Profiling;
 public class Kabsch : MonoBehaviour {
   public Transform[] inPoints;
   public Transform[] referencePoints;
@@ -35,6 +36,7 @@ public class KabschSolver {
   Quaternion OptimalRotation = Quaternion.identity;
   public Matrix4x4 SolveKabsch(Vector3[] inPoints, Vector3[] refPoints, bool solveRotation = true) {
     if (inPoints.Length != refPoints.Length) { return Matrix4x4.identity; }
+    Profiler.BeginSample("Kabsch Solve");
 
     //Calculate the centroid offset and construct the centroid-shifted point matrices
     Vector3 inCentroid = Vector3.zero; Vector3 refCentroid = Vector3.zero;
@@ -47,9 +49,12 @@ public class KabschSolver {
 
     //Calculate the 3x3 covariance matrix, and the optimal rotation
     if (solveRotation) {
+      Profiler.BeginSample("Solve Optimal Rotation");
       extractRotation(TransposeMultSubtract(inPoints, refPoints, inCentroid, refCentroid, DataCovariance), ref OptimalRotation);
+      Profiler.EndSample();
     }
 
+    Profiler.EndSample();
     return Matrix4x4.TRS(refCentroid,  Quaternion.identity, Vector3.one) *
            Matrix4x4.TRS(Vector3.zero, OptimalRotation,     Vector3.one) *
            Matrix4x4.TRS(-inCentroid,  Quaternion.identity, Vector3.one);
@@ -59,6 +64,7 @@ public class KabschSolver {
   //Iteratively apply torque to the basis using Cross products (in place of SVD)
   void extractRotation(Vector3[] A, ref Quaternion q) {
     for (int iter = 0; iter < 9; iter++) {
+      Profiler.BeginSample("Iterate Quaternion");
       q.FillMatrixFromQuaternion(ref QuatBasis);
       Vector3 omega = (Vector3.Cross(QuatBasis[0], A[0]) +
                        Vector3.Cross(QuatBasis[1], A[1]) +
@@ -72,11 +78,13 @@ public class KabschSolver {
         break;
       q = Quaternion.AngleAxis(w, (1f / w) * omega) * q;
       q = Quaternion.Lerp(q, q, 0f); //Normalizes the Quaternion; critical for error suppression
+      Profiler.EndSample();
     }
   }
 
   //Calculate Covariance Matrices --------------------------------------------------
   public static Vector3[] TransposeMultSubtract(Vector3[] vec1, Vector3[] vec2, Vector3 vec1Centroid, Vector3 vec2Centroid, Vector3[] covariance) {
+    Profiler.BeginSample("Calculate Covariance Matrix");
     for (int i = 0; i < 3; i++) { //i is the row in this matrix
       covariance[i] = Vector3.zero;
       for (int j = 0; j < 3; j++) {//j is the column in the other matrix
@@ -85,6 +93,7 @@ public class KabschSolver {
         }
       }
     }
+    Profiler.EndSample();
     return covariance;
   }
 }
