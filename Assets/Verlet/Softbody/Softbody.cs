@@ -17,6 +17,7 @@ public class Softbody : MonoBehaviour {
   protected Vector3[] originalVerts;
   protected Vector3[] bodyVerts;
   protected Vector4[] prevBodyVerts;
+  protected Vector4[] accumulatedDisplacements;
   protected int[] bodyTriangles;
   protected Vector3[] bodyNormals;
   protected Vector3[] renderVerts;
@@ -38,6 +39,7 @@ public class Softbody : MonoBehaviour {
     bodyNormals = bodyMesh.normals;
     renderNormals = bodyMesh.normals;
     prevBodyVerts = new Vector4[bodyVerts.Length];
+    accumulatedDisplacements = new Vector4[bodyVerts.Length];
     for (int i = 0; i < bodyVerts.Length; i++) {
       prevBodyVerts[i] = transform.TransformPoint(bodyVerts[i]);
     }
@@ -71,7 +73,7 @@ public class Softbody : MonoBehaviour {
 
     for (int i = 0; i < solverIterations; i++) {
       //First, ensure that the surface area is what we think it is
-      Verlet.resolveDistanceConstraints(constraints, ref bodyVerts, 1);
+      Verlet.resolveDistanceConstraints(constraints, ref bodyVerts, ref accumulatedDisplacements, 1);
 
       //Next, set the volume of the soft body
       Verlet.setVolume(inflationAmount * initialVolume, bodyVerts, bodyNormals, bodyTriangles, initialSurfaceArea, fastButGarbage);

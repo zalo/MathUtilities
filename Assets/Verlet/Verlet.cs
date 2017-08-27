@@ -103,12 +103,7 @@ public static class Verlet {
     }
   }
 
-  public static void resolveDistanceConstraints(List<DistConstraint> constraints, ref Vector3[] verts, int iterations = 3) {
-    Vector4[] accumulatedDisplacements = new Vector4[verts.Length];
-    for (int j = 0; j < verts.Length; j++) {
-      accumulatedDisplacements[j] = Vector4.zero;
-    }
-
+  public static void resolveDistanceConstraints(List<DistConstraint> constraints, ref Vector3[] verts, ref Vector4[] accumulatedDisplacements, int iterations = 3) {
     for (int i = 0; i < iterations; i++) {
       for (int j = 0; j < constraints.Count; j++) {
         constraints[j].ResolveConstraint(verts, ref accumulatedDisplacements);

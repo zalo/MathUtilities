@@ -10,6 +10,7 @@ public class VerletCloth : MonoBehaviour {
   Mesh clothMesh;
   Vector3[] clothVerts;
   Vector4[] prevClothVerts;
+  Vector4[] accumulatedDisplacements;
   Vector3 scaledGravity;
   float previousDeltaTime = 1f;
 
@@ -19,6 +20,7 @@ public class VerletCloth : MonoBehaviour {
     clothMesh.MarkDynamic();
     clothVerts = clothMesh.vertices;
     prevClothVerts = new Vector4[clothVerts.Length];
+    accumulatedDisplacements = new Vector4[clothVerts.Length];
     for (int i = 0; i < clothVerts.Length; i++) {
       prevClothVerts[i] = new Vector4(clothVerts[i].x, clothVerts[i].y, clothVerts[i].z, 1f);
     }
@@ -42,7 +44,7 @@ public class VerletCloth : MonoBehaviour {
     clothVerts[10] = prevClothVerts[10] = anchor2.position;
 
     //Constraint Resolution
-    Verlet.resolveDistanceConstraints(constraints, ref clothVerts, 1);
+    Verlet.resolveDistanceConstraints(constraints, ref clothVerts, ref accumulatedDisplacements, 1);
 
     //Graphics
     clothMesh.vertices = clothVerts;
