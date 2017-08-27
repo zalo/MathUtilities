@@ -497,8 +497,8 @@ TextMesh:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 851695680}
   m_Text: "Try dragging the \"AdjustingCamera\" \nout of place.  Watch it solve for
-    the\nposition that minimizes the distance \nbetween rays and the points.\n\nNote
-    that this requires 3D points as reference."
+    the\nposition that minimizes the distance \nbetween rays and the points.\n\nThis
+    will always converge, but \nit requires 3D points as reference."
   m_OffsetZ: 0
   m_CharacterSize: 0.007
   m_LineSpacing: 1

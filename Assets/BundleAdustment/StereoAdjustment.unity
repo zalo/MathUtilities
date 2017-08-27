@@ -978,8 +978,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00fa992bc53dd8a4c87f484283b00d09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  adjustPosition: 1
-  adjustRotation: 1
   features:
   - {fileID: 678249442}
   - {fileID: 230370962}
@@ -991,10 +989,11 @@ MonoBehaviour:
   - {fileID: 1364872347}
   - {fileID: 634320946}
   - {fileID: 1008528448}
-  camera11: {fileID: 365179938}
-  camera12: {fileID: 1275341411}
-  camera21: {fileID: 872994434}
-  camera22: {fileID: 2038788019}
+  cameras:
+  - {fileID: 365179938}
+  - {fileID: 1275341411}
+  - {fileID: 872994434}
+  - {fileID: 2038788019}
 --- !u!4 &1431779720
 Transform:
   m_ObjectHideFlags: 0
@@ -1002,7 +1001,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1431779718}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -0.1804}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1486378348}
@@ -1286,7 +1285,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1997123322}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.075, z: 0}
+  m_LocalPosition: {x: 0, y: 0.01, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 872994434}

@@ -1009,8 +1009,9 @@ MonoBehaviour:
   - {fileID: 1364872347}
   - {fileID: 634320946}
   - {fileID: 1008528448}
-  cameraOne: {fileID: 365179938}
-  cameraTwo: {fileID: 1275341411}
+  cameras:
+  - {fileID: 365179938}
+  - {fileID: 1275341411}
 --- !u!4 &1486378348
 Transform:
   m_ObjectHideFlags: 0

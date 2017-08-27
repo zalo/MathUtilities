@@ -3,43 +3,45 @@
 public class BundleAdjuster : MonoBehaviour {
   public Transform[] features;
 
-  public Transform cameraOne;
-  Vector3[] rayDirectionsOne;
+  public Transform[] cameras;
+  Vector3[][] rayDirections;
 
-  public Transform cameraTwo;
-  Vector3[] rayDirectionsTwo;
-
-  Vector3 currentDeltaPos;
+  KabschSolver solver = new KabschSolver();
+  Vector3[] inPoints, refPoints;
   void Start () {
-    rayDirectionsOne = new Vector3[features.Length];
-    rayDirectionsTwo = new Vector3[features.Length];
+    inPoints = new Vector3[features.Length];
+    refPoints = new Vector3[features.Length];
+    rayDirections = new Vector3[2][];
 
-    for (int i = 0; i < features.Length; i++) {
-      rayDirectionsOne[i] = cameraOne.InverseTransformPoint(features[i].position).normalized;
-      rayDirectionsTwo[i] = cameraTwo.InverseTransformPoint(features[i].position).normalized;
+    for (int cameraIndex = 0; cameraIndex < 2; cameraIndex++) {
+      rayDirections[cameraIndex] = new Vector3[features.Length];
+      for (int i = 0; i < features.Length; i++) {
+        rayDirections[cameraIndex][i] = cameras[cameraIndex].InverseTransformPoint(features[i].position).normalized;
+      }
     }
-	}
-	
-	void Update () {
-    currentDeltaPos = Vector3.zero;
-    for (int i = 0; i < features.Length; i++) {
-      Debug.DrawLine(cameraOne.position, cameraOne.TransformPoint(rayDirectionsOne[i]));
-      Debug.DrawLine(cameraTwo.position, cameraTwo.TransformPoint(rayDirectionsTwo[i]));
+  }
 
-      float timeLineOne, timeLineTwo;
-      line2lineDisplacement(cameraOne.position, cameraOne.TransformPoint(rayDirectionsOne[i]), cameraTwo.position, cameraTwo.TransformPoint(rayDirectionsTwo[i]), out timeLineOne, out timeLineTwo);
+  void Update() {
+    for (int iteration = 0; iteration < 1; iteration++) {
+      for (int i = 0; i < features.Length; i++) {
+        Debug.DrawLine(cameras[0].position, cameras[0].TransformPoint(rayDirections[0][i]));
+        Debug.DrawLine(cameras[1].position, cameras[1].TransformPoint(rayDirections[1][i]));
 
-      //Take the abs of the times so they can't intersect behind the camera
-      timeLineOne = Mathf.Abs(timeLineOne); timeLineTwo = Mathf.Abs(timeLineTwo);
+        float timeLineOne, timeLineTwo;
+        line2lineDisplacement(cameras[0].position, cameras[0].TransformPoint(rayDirections[0][i]), cameras[1].position, cameras[1].TransformPoint(rayDirections[1][i]), out timeLineOne, out timeLineTwo);
 
-      Vector3 pointLineOne = Vector3.LerpUnclamped(cameraOne.position, cameraOne.TransformPoint(rayDirectionsOne[i]), timeLineOne);
-      Vector3 pointLineTwo = Vector3.LerpUnclamped(cameraTwo.position, cameraTwo.TransformPoint(rayDirectionsTwo[i]), timeLineTwo);
+        //Take the abs of the times so they can't intersect behind the camera
+        timeLineOne = Mathf.Abs(timeLineOne); timeLineTwo = Mathf.Abs(timeLineTwo);
 
-      Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);
-      currentDeltaPos += (pointLineTwo - pointLineOne);
+        inPoints[i] = Vector3.LerpUnclamped(cameras[0].position, cameras[0].TransformPoint(rayDirections[0][i]), timeLineOne);
+        refPoints[i] = Vector3.LerpUnclamped(cameras[1].position, cameras[1].TransformPoint(rayDirections[1][i]), timeLineTwo);
+        Debug.DrawLine(inPoints[i], refPoints[i], Color.red);
+      }
+
+      Matrix4x4 iterationStep = solver.SolveKabsch(refPoints, inPoints, true);
+      cameras[1].position += iterationStep.GetVector3();
+      cameras[1].rotation = iterationStep.GetQuaternion() * cameras[1].rotation;
     }
-
-    cameraTwo.position -= (currentDeltaPos / features.Length)*1f;
   }
 
   //LINE <-> LINE ANALYSIS
