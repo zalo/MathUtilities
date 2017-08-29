@@ -36,7 +36,6 @@ public class KabschSolver {
   Quaternion OptimalRotation = Quaternion.identity;
   public Matrix4x4 SolveKabsch(Vector3[] inPoints, Vector3[] refPoints, bool solveRotation = true) {
     if (inPoints.Length != refPoints.Length) { return Matrix4x4.identity; }
-    Profiler.BeginSample("Kabsch Solve");
 
     //Calculate the centroid offset and construct the centroid-shifted point matrices
     Vector3 inCentroid = Vector3.zero; Vector3 refCentroid = Vector3.zero;
@@ -54,7 +53,6 @@ public class KabschSolver {
       Profiler.EndSample();
     }
 
-    Profiler.EndSample();
     return Matrix4x4.TRS(refCentroid,  Quaternion.identity, Vector3.one) *
            Matrix4x4.TRS(Vector3.zero, OptimalRotation,     Vector3.one) *
            Matrix4x4.TRS(-inCentroid,  Quaternion.identity, Vector3.one);
@@ -87,12 +85,23 @@ public class KabschSolver {
     Profiler.BeginSample("Calculate Covariance Matrix");
     for (int i = 0; i < 3; i++) { //i is the row in this matrix
       covariance[i] = Vector3.zero;
-      for (int j = 0; j < 3; j++) {//j is the column in the other matrix
-        for (int k = 0; k < vec1.Length; k++) {//k is the column in this matrix
-          covariance[i][j] += (vec1[k][i] - vec1Centroid[i]) * (vec2[k][j] - vec2Centroid[j]);
-        }
-      }
     }
+    
+    for (int k = 0; k < vec1.Length; k++) {//k is the column in this matrix
+      Vector3 left = vec1[k] - vec1Centroid;
+      Vector3 right = vec2[k] - vec2Centroid;
+
+      covariance[0][0] += left[0]*right[0];
+      covariance[1][0] += left[1]*right[0];
+      covariance[2][0] += left[2]*right[0];
+      covariance[0][1] += left[0]*right[1];
+      covariance[1][1] += left[1]*right[1];
+      covariance[2][1] += left[2]*right[1];
+      covariance[0][2] += left[0]*right[2];
+      covariance[1][2] += left[1]*right[2];
+      covariance[2][2] += left[2]*right[2];
+    }
+
     Profiler.EndSample();
     return covariance;
   }
