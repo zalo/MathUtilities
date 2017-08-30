@@ -3,13 +3,13 @@ using UnityEngine;
 
 public static class Verlet {
   //Particle Verlet Integration
-  public static void Integrate(Vector3[] curPoints, Vector4[] prevPoints, Vector3 gravity, float deltaTime, float prevDeltaTime) {
+  public static void Integrate(Vector3[] curPoints, Vector3[] prevPoints, Vector3 gravity, float deltaTime = 1f, float prevDeltaTime = 1f) {
     for (int i = 0; i < curPoints.Length; i++) {
       //Grab State from Previous Frame
       Vector3 tempPos = curPoints[i];
 
       //Integrate Position
-      curPoints[i] += (curPoints[i] - (Vector3)prevPoints[i]) * (deltaTime / prevDeltaTime) + (gravity * deltaTime * deltaTime);
+      curPoints[i] += (curPoints[i] - prevPoints[i]) * (deltaTime / prevDeltaTime) + (gravity * deltaTime * deltaTime);
 
       //Store State from Previous Frame
       prevPoints[i] = tempPos;
@@ -59,7 +59,7 @@ public static class Verlet {
     for (int i = 0; i < normals.Length; i++) { normals[i] = tempNorm[i]; }
   }
 
-  public static void setVolume(float desiredVolume, Vector3[] verts, Vector3[] normals, int[] triangles, float surfaceArea = 0f, bool fastButGarbage = true) {
+  public static void setVolume(float desiredVolume, Vector3[] verts, Vector3[] normals, int[] triangles, float surfaceArea = 0f, bool equality = true, bool fastButGarbage = true) {
     //Calculate the normals of each vertex...
     if (fastButGarbage) {
       RecalculateNormalsAlloc(verts, triangles, ref normals);
@@ -69,11 +69,13 @@ public static class Verlet {
 
     //And the distance we have to dilate each vert to acheive the desired volume...
     float deltaVolume = desiredVolume - VolumeOfMesh(verts, triangles);
-    float dilationDistance = deltaVolume / (surfaceArea==0f?SurfaceAreaOfMesh(verts, triangles):surfaceArea);
+    if (deltaVolume > 0 || equality) {
+      float dilationDistance = deltaVolume / (surfaceArea == 0f ? SurfaceAreaOfMesh(verts, triangles) : surfaceArea);
 
-    //And we translate the verts to acheive that volume
-    for (int j = 0; j < verts.Length; j++) {
-      verts[j] += normals[j] * dilationDistance;
+      //And we translate the verts to achieve that volume
+      for (int j = 0; j < verts.Length; j++) {
+        verts[j] += normals[j] * dilationDistance;
+      }
     }
   }
 
@@ -112,6 +114,7 @@ public static class Verlet {
       for (int j = 0; j < verts.Length; j++) {
         if (accumulatedDisplacements[j] != Vector4.zero) { accumulatedDisplacements[j] /= accumulatedDisplacements[j][3]; }
         verts[j] += new Vector3(accumulatedDisplacements[j][0], accumulatedDisplacements[j][1], accumulatedDisplacements[j][2]);
+        accumulatedDisplacements[j] = Vector4.zero;
       }
     }
   }

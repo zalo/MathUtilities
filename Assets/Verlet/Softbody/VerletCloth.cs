@@ -9,7 +9,7 @@ public class VerletCloth : MonoBehaviour {
   List<Verlet.DistConstraint> constraints;
   Mesh clothMesh;
   Vector3[] clothVerts;
-  Vector4[] prevClothVerts;
+  Vector3[] prevClothVerts;
   Vector4[] accumulatedDisplacements;
   Vector3 scaledGravity;
   float previousDeltaTime = 1f;
@@ -19,11 +19,8 @@ public class VerletCloth : MonoBehaviour {
     clothMesh = Instantiate(filter.mesh);
     clothMesh.MarkDynamic();
     clothVerts = clothMesh.vertices;
-    prevClothVerts = new Vector4[clothVerts.Length];
+    prevClothVerts = clothMesh.vertices;
     accumulatedDisplacements = new Vector4[clothVerts.Length];
-    for (int i = 0; i < clothVerts.Length; i++) {
-      prevClothVerts[i] = new Vector4(clothVerts[i].x, clothVerts[i].y, clothVerts[i].z, 1f);
-    }
     filter.mesh = clothMesh;
 
     //Create Distance Constraints from Triangles in Mesh

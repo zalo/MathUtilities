@@ -33,6 +33,13 @@ public static class Constraints {
     return Vector3.Lerp(a, b, Vector3.Dot(position - a, ba) / ba.sqrMagnitude);
   }
 
+  public static Vector3 ConstrainToCapsule(this Vector3 position, Vector3 a, Vector3 b, float radius, bool toSurface = false) {
+    Vector3 onSegment = ConstrainToSegment(position, a, b);
+    Vector3 displacement = position - onSegment;
+    float magnitude = displacement.magnitude;
+    return magnitude > radius ? onSegment + (displacement.normalized * radius) : position;
+  }
+
   public static Vector3 ConstrainDistance(this Vector3 position, Vector3 anchor, float distance) {
     return anchor + ((position - anchor).normalized * distance);
   }
