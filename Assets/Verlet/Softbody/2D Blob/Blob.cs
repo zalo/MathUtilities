@@ -59,9 +59,9 @@ public class Blob : MonoBehaviour {
 
       //Dilate the polygon by the distance required to acheieve the desired area
       for (int i = 0; i < curPoints.Length; i++) {
-        Vector2 dilation = Vector3.Cross(Vector3.forward, curPoints[i == 0 ? curPoints.Length - 1 : i - 1] -
-                                                          curPoints[i == curPoints.Length - 1 ? 0 : i + 1]).normalized * dilationDistance;
-        accumDis[i] += new Vector3(dilation.x, dilation.y, 1f);
+        Vector2 normal = Vector3.Cross(Vector3.forward, curPoints[i == 0 ? curPoints.Length - 1 : i - 1] -
+                                                        curPoints[i == curPoints.Length - 1 ? 0 : i + 1]).normalized;
+        accumDis[i] += (Vector3)(normal * dilationDistance) + Vector3.forward;
       }
 
       //Apply constraints
