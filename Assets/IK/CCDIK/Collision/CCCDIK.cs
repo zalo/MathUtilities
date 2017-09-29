@@ -23,7 +23,7 @@ public class CCCDIK : MonoBehaviour {
 
       //Find the closest point 
       for (int j = joints.Length - 1; j >= 0; j--) {
-        Vector3 jointPoint = closestPointOnCapsule(environment.transform.position, joints[j].GetComponent<Collider>() as CapsuleCollider);
+        Vector3 jointPoint = Constraints.ClosestPointOnCapsule(environment.transform.position, joints[j].GetComponent<Collider>() as CapsuleCollider);
         Vector3 offset = jointPoint - environment.transform.position;
         if (offset.magnitude < environment.radius * environment.transform.lossyScale.x) {
           nearestPoint.parent = joints[j].transform;
@@ -38,11 +38,5 @@ public class CCCDIK : MonoBehaviour {
         }
       }
     }
-  }
-
-  Vector3 closestPointOnCapsule(Vector3 point, CapsuleCollider collider) {
-    Vector3 offset = (collider.direction==0?Vector3.right:Vector3.up) * Mathf.Clamp01((collider.height*0.5f) - collider.radius);
-    Vector3 onSegment = Constraints.ConstrainToSegment(point, collider.transform.TransformPoint(collider.center + offset), collider.transform.TransformPoint(collider.center - offset));
-    return onSegment + ((point - onSegment).normalized * collider.radius);
   }
 }

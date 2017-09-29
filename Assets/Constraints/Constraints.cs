@@ -40,6 +40,31 @@ public static class Constraints {
     return magnitude > radius ? onSegment + (displacement.normalized * radius) : position;
   }
 
+  public static Vector3 ClosestPointOnCapsule(Vector3 point, CapsuleCollider collider) {
+    Vector3 offset = (collider.direction == 0 ? Vector3.right : Vector3.up) * Mathf.Clamp01((collider.height * 0.5f) - collider.radius);
+    Vector3 onSegment = ConstrainToSegment(point, collider.transform.TransformPoint(collider.center + offset), collider.transform.TransformPoint(collider.center - offset));
+    return onSegment + ((point - onSegment).normalized * collider.radius);
+  }
+
+  //Ack late night function; horrible horrible code
+  public static Vector4 ClosestPointCapsuleOnPlane(CapsuleCollider collider, Vector3 point, Vector3 normal) {
+    Vector3 offset = (collider.direction == 0 ? Vector3.right : Vector3.up) * Mathf.Clamp01((collider.height * 0.5f) - collider.radius);
+
+    Vector3 capsuleEnd = collider.transform.TransformPoint(collider.center + offset);
+    Vector4 planeCandidate1 = Vector3.ProjectOnPlane(capsuleEnd - point, normal) + point;
+    planeCandidate1 = new Vector4(planeCandidate1.x, planeCandidate1.y, planeCandidate1.z, (-Mathf.Sign(Vector3.Dot(capsuleEnd - point, normal)) * Vector3.Distance(planeCandidate1, capsuleEnd)) - collider.radius);
+
+    capsuleEnd = collider.transform.TransformPoint(collider.center - offset);
+    Vector4 planeCandidate2 = Vector3.ProjectOnPlane(capsuleEnd - point, normal) + point;
+    planeCandidate2 = new Vector4(planeCandidate2.x, planeCandidate2.y, planeCandidate2.z, (-Mathf.Sign(Vector3.Dot(capsuleEnd - point, normal)) * Vector3.Distance(planeCandidate2, capsuleEnd)) - collider.radius);
+
+    if(Vector3.Dot(normal, collider.transform.rotation * offset) > 0f) {
+      return planeCandidate2;
+    } else {
+      return planeCandidate1;
+    }
+  }
+
   public static Vector3 ConstrainDistance(this Vector3 position, Vector3 anchor, float distance) {
     return anchor + ((position - anchor).normalized * distance);
   }
