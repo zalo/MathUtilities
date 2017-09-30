@@ -4,13 +4,11 @@
 	{
 		_MainTex ("Texture", 3D) = "white" {}
 	}
-	SubShader
-	{
+	SubShader {
 		Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
 		LOD 100
 
-		Pass
-		{
+		Pass {
 			Blend SrcAlpha OneMinusSrcAlpha
 			Cull Off
 
@@ -22,13 +20,11 @@
 			
 			#include "UnityCG.cginc"
 
-			struct appdata
-			{
+			struct appdata {
 				float4 vertex : POSITION;
 			};
 
-			struct v2f
-			{
+			struct v2f {
 				float3 camPos : TEXCOORD0;
 				float4 lPos : TEXCOORD1;
 				float3 viewDir : TEXCOORD2;
@@ -38,8 +34,7 @@
 
 			sampler3D _MainTex;
 			
-			v2f vert (appdata v)
-			{
+			v2f vert (appdata v) {
 				v2f o;
 				o.camPos = mul(unity_WorldToObject, _WorldSpaceCameraPos).xyz;
 				o.lPos = v.vertex;
@@ -49,12 +44,12 @@
 				return o;
 			}
 
-			float sampleDistanceField(float3 pos){
-				return DecodeFloatRGBA(tex3D( _MainTex, pos - 0.5))-0.5;
+			float sampleDistanceField(float3 pos) {
+				return DecodeFloatRGBA(tex3D( _MainTex, pos + 0.5))-0.5;
 			}
 
 			float3 calcNormal( in float3 pos ) {
-				float2 e = float2(1.0,-1.0)*0.5773*0.005;
+				float2 e = float2(1.0,-1.0)*0.005; //Increasing this number makes the shape look smoother
 				return normalize( e.xyy*sampleDistanceField( pos + e.xyy ).x + 
 								  e.yyx*sampleDistanceField( pos + e.yyx ).x + 
 								  e.yxy*sampleDistanceField( pos + e.yxy ).x + 
@@ -82,21 +77,21 @@
 					alpha += 0.11;
 				}
 
-				for(int i=1; i<100; i++){
+				for(int i=1; i<100; i++) {
 				  float3 pos = startingPos - (viewDirection*alpha);
-				  if(valid && (abs(pos.x)>0.499 || abs(pos.y)>0.499 ||abs(pos.z)>0.499)){
+				  if(valid && (abs(pos.x)>0.499 || abs(pos.y)>0.499 || abs(pos.z)>0.499)){
 						valid = false;
 				  }
 
 				  float dist = sampleDistanceField(pos);
-				  if(valid && dist < 0.001){
+				  if(valid && dist < 0.001) {
 						float brightness = (dot(normalize(lightDir), calcNormal(pos))+0.85)*0.5;
 						colorSum = float4(brightness, brightness, brightness, 1.0);
 						float4 pos_clip = UnityObjectToClipPos(float4(startingPos - (viewDirection*alpha), 1.0));
 						depth = pos_clip.z / pos_clip.w;
 						valid = false;
 				  }
-				  alpha += dist*0.7;
+				  alpha += dist*0.5;
 				}
 
 				col = colorSum;

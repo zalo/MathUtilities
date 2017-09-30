@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class ConfigurationSpace : MonoBehaviour {
   public CCDIKJoint[] joints;
@@ -30,11 +29,12 @@ public class ConfigurationSpace : MonoBehaviour {
 
   //Initialize the Arm's Kinematics
   void Start() {
-    configurationSpace = new Texture3D(resolution, resolution, resolution, TextureFormat.ARGB32, false);
     joints[2].transform.localRotation = Quaternion.Euler(joints[2].axis * ((curArm2 * arm2Step) - arm2HalfRange));
     joints[3].transform.localRotation = Quaternion.Euler(joints[3].axis * ((curArm1 * arm1Step) - arm1HalfRange));
     joints[4].transform.localRotation = Quaternion.Euler(joints[4].axis * ((curTwist * twistStep) - twistHalfRange));
 
+    configurationSpace = new Texture3D(resolution, resolution, resolution, TextureFormat.ARGB32, false);
+    configurationSpace.wrapMode = TextureWrapMode.Clamp;
     if (volumeMaterial.mainTexture == null) { volumeMaterial.mainTexture = configurationSpace; }
   }
 
@@ -57,19 +57,24 @@ public class ConfigurationSpace : MonoBehaviour {
       configurationSpace.SetPixels32(distances);
       configurationSpace.Apply();
     } else {
-      Vector3 configurationPos = configurationVolume.InverseTransformPoint(configurationCursor.position) + (Vector3.one * 0.5f);
-      joints[2].transform.localRotation = Quaternion.Euler(joints[2].axis * (((Mathf.Clamp01(configurationPos.x) * resolution) * arm2Step) - arm2HalfRange));
-      joints[3].transform.localRotation = Quaternion.Euler(joints[3].axis * (((Mathf.Clamp01(configurationPos.y) * resolution) * arm1Step) - arm1HalfRange));
-      joints[4].transform.localRotation = Quaternion.Euler(joints[4].axis * (((Mathf.Clamp01(configurationPos.z) * resolution) * twistStep) - twistHalfRange));
-
       //Find the distance to the nearest joint
-      float distance = distanceToNearestObstructor();
+      Vector3 gradient = sampleConfigurationSpaceGradient(configurationCursor.position);
+      float distance = sampleConfigurationSpace(configurationCursor.position);
 
-      configurationCursor.GetComponent<Renderer>().material.color = Color.Lerp(Color.red, Color.green, distance * 30f);
+      //Depenetrate the arm using the configuration space gradient
+      //Pretty cool :)
+      if(distance < 0) { configurationCursor.position += gradient*0.1f; }
+
+      configurationCursor.GetComponent<Renderer>().material.color = Color.Lerp(Color.red, Color.green, distance * 300f);
+
+      //Clamp the cursor to remain inside of the configuration space
+      Vector3 localSphere = configurationVolume.InverseTransformPoint(configurationCursor.position);
+      localSphere = new Vector3(Mathf.Clamp(localSphere.x, -0.5f, 0.5f), Mathf.Clamp(localSphere.y, -0.5f, 0.5f), Mathf.Clamp(localSphere.z, -0.5f, 0.5f));
+      configurationCursor.position = configurationVolume.TransformPoint(localSphere);
     }
   }
 
-  //Increment the joint angles on the arm
+  //Increment the joint angles on the arm to sweep through the configuration space
   void incrementConfigurationSpace() {
     curArm2++;
     joints[2].transform.localRotation = Quaternion.Euler(joints[2].axis * ((curArm2 * arm2Step) - arm2HalfRange));
@@ -91,9 +96,23 @@ public class ConfigurationSpace : MonoBehaviour {
       curTwist = 0;
       curArm1 = 0;
       curArm2 = 0;
-      //Start();
       textureComplete = true;
     }
+  }
+
+  Vector3 sampleConfigurationSpaceGradient(Vector3 pos, float epsilon = 0.05f) {
+    float distanceAtPos = sampleConfigurationSpace(pos);
+    return new Vector3(sampleConfigurationSpace(pos + (Vector3.right   * epsilon)) - distanceAtPos,
+                       sampleConfigurationSpace(pos + (Vector3.up      * epsilon)) - distanceAtPos,
+                       sampleConfigurationSpace(pos + (Vector3.forward * epsilon)) - distanceAtPos)/epsilon;
+  }
+
+  float sampleConfigurationSpace(Vector3 pos) {
+    Vector3 configurationPos = configurationVolume.InverseTransformPoint(pos) + (Vector3.one * 0.5f);
+    joints[2].transform.localRotation = Quaternion.Euler(joints[2].axis * (((Mathf.Clamp01(configurationPos.x) * resolution) * arm2Step) - arm2HalfRange));
+    joints[3].transform.localRotation = Quaternion.Euler(joints[3].axis * (((Mathf.Clamp01(configurationPos.y) * resolution) * arm1Step) - arm1HalfRange));
+    joints[4].transform.localRotation = Quaternion.Euler(joints[4].axis * (((Mathf.Clamp01(configurationPos.z) * resolution) * twistStep) - twistHalfRange));
+    return distanceToNearestObstructor();
   }
 
   //Returns the signed distance between the nearest joint and the nearest obstructor for this configuration (sphere and ground plane in this instance)
@@ -131,7 +150,7 @@ public class ConfigurationSpace : MonoBehaviour {
                      Vector3.Dot(normal, capsuleEnd -       planePoint)) - collider.radius;
   }
 
-
+  //Encode a float to four bytes (without generating garbage) for writing to the Configuration space volume texture
   Color32 encodeFloatRGBA(float input) {
     float r = input;
     float g = input * 255;
