@@ -71,11 +71,15 @@ Shader "Unlit/VolumeTexture"
 				//startingPos = planeAlignment(i.screenPos);
 
 				float3 viewDirection = i.viewDir;
-				const float alpha = 0.02;
-				float4 colorSum = 0.0;
+				const float alpha = 0.015;
+				float colorSum = 0.0;
 				for(int i=0; i<100; i++){
 				  float3 pos = startingPos - (viewDirection*(i*alpha));
-				  colorSum += tex3D( _MainTex, pos - 0.5)*0.2;//max(0,(0.5-length(pos))*0.1);//
+				  if(abs(pos.x)>0.5 || abs(pos.y)>0.5 ||abs(pos.z)>0.5){
+						break;
+				  }
+
+				  colorSum += clamp(DecodeFloatRGBA(tex3D( _MainTex, pos - 0.5))-0.5, 0.0, 1.0)*0.1;//max(0,(0.5-length(pos))*0.1);//
 				}
 
 				col = colorSum;

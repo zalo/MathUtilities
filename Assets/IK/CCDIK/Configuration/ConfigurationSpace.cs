@@ -38,10 +38,10 @@ public class ConfigurationSpace : MonoBehaviour {
     for (int i = 0; i < evaluationsPerFrame; i++) {
       //Find the distance to the nearest joint
       float distance = distanceToNearestObstructor();
-      byte distanceByte = (byte)((Mathf.Clamp01((distance) * 5f)) * 255f);
 
       //Write to the configuration space texture array
-      distances[(curTwist * resolution * resolution) + (curArm1 * resolution) + curArm2] = new Color32(distanceByte, 0, 0, distanceByte);
+      //The 0-1 range here encodes the -50cm to +50cm range of distance values as a float
+      distances[(curTwist * resolution * resolution) + (curArm1 * resolution) + curArm2] = encodeFloatRGBA(Mathf.Clamp01(distance+0.5f));
 
       //Increment the configuration space coordinates
       incrementConfigurationSpace();
@@ -111,5 +111,20 @@ public class ConfigurationSpace : MonoBehaviour {
 
     return Mathf.Min(Vector3.Dot(normal, capsuleBeginning - planePoint),
                      Vector3.Dot(normal, capsuleEnd -       planePoint)) - collider.radius;
+  }
+
+
+  Color32 encodeFloatRGBA(float input) {
+    float r = input;
+    float g = input * 255;
+    float b = input * 255 * 255;
+    float a = input * 255 * 255 * 255;
+
+    r = r - Mathf.Floor(r);
+    g = g - Mathf.Floor(g);
+    b = b - Mathf.Floor(b);
+    a = a - Mathf.Floor(a);
+
+    return new Color32((byte)(r*255), (byte)(g*255), (byte)(b*255), (byte)(a*255));
   }
 }
