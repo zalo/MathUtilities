@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class ConfigurationSpace : MonoBehaviour {
   public CCDIKJoint[] joints;
@@ -6,6 +7,8 @@ public class ConfigurationSpace : MonoBehaviour {
   public Transform floor;
   public Material volumeMaterial;
   public int evaluationsPerFrame = 1;
+  public Transform configurationVolume;
+  public Transform configurationCursor;
 
   const int resolution = 64;
   Texture3D configurationSpace;
@@ -15,13 +18,15 @@ public class ConfigurationSpace : MonoBehaviour {
   const float arm1HalfRange = 100;
   const float arm2HalfRange = 140;
 
-  int curTwist = 0;
-  int curArm1 = 0;
-  int curArm2 = 0;
+  float curTwist = 0;
+  float curArm1 = 0;
+  float curArm2 = 0;
 
   float twistStep = (twistHalfRange * 2f) / resolution;
   float arm1Step = (arm1HalfRange * 2f) / resolution;
   float arm2Step = (arm2HalfRange * 2f) / resolution;
+
+  bool textureComplete = false;
 
   //Initialize the Arm's Kinematics
   void Start() {
@@ -35,21 +40,33 @@ public class ConfigurationSpace : MonoBehaviour {
 
   //Incrementally update the configuration space evaluation
   void Update() {
-    for (int i = 0; i < evaluationsPerFrame; i++) {
+    if (!textureComplete) {
+      for (int i = 0; i < evaluationsPerFrame; i++) {
+        //Find the distance to the nearest joint
+        float distance = distanceToNearestObstructor();
+
+        //Write to the configuration space texture array
+        //The 0-1 range here encodes the -50cm to +50cm range of distance values as a float
+        distances[(int)((curTwist * resolution * resolution) + (curArm1 * resolution) + curArm2)] = encodeFloatRGBA(Mathf.Clamp01(distance + 0.5f));
+
+        //Increment the configuration space coordinates
+        incrementConfigurationSpace();
+      }
+
+      //Fill the configuration space texture and apply it
+      configurationSpace.SetPixels32(distances);
+      configurationSpace.Apply();
+    } else {
+      Vector3 configurationPos = configurationVolume.InverseTransformPoint(configurationCursor.position) + (Vector3.one * 0.5f);
+      joints[2].transform.localRotation = Quaternion.Euler(joints[2].axis * (((Mathf.Clamp01(configurationPos.x) * resolution) * arm2Step) - arm2HalfRange));
+      joints[3].transform.localRotation = Quaternion.Euler(joints[3].axis * (((Mathf.Clamp01(configurationPos.y) * resolution) * arm1Step) - arm1HalfRange));
+      joints[4].transform.localRotation = Quaternion.Euler(joints[4].axis * (((Mathf.Clamp01(configurationPos.z) * resolution) * twistStep) - twistHalfRange));
+
       //Find the distance to the nearest joint
       float distance = distanceToNearestObstructor();
 
-      //Write to the configuration space texture array
-      //The 0-1 range here encodes the -50cm to +50cm range of distance values as a float
-      distances[(curTwist * resolution * resolution) + (curArm1 * resolution) + curArm2] = encodeFloatRGBA(Mathf.Clamp01(distance+0.5f));
-
-      //Increment the configuration space coordinates
-      incrementConfigurationSpace();
+      configurationCursor.GetComponent<Renderer>().material.color = Color.Lerp(Color.red, Color.green, distance * 30f);
     }
-
-    //Fill the configuration space texture and apply it
-    configurationSpace.SetPixels32(distances);
-    configurationSpace.Apply();
   }
 
   //Increment the joint angles on the arm
@@ -74,7 +91,8 @@ public class ConfigurationSpace : MonoBehaviour {
       curTwist = 0;
       curArm1 = 0;
       curArm2 = 0;
-      Start();
+      //Start();
+      textureComplete = true;
     }
   }
 
