@@ -8,6 +8,8 @@ public class ConfigurationSpace : MonoBehaviour {
   public int evaluationsPerFrame = 1;
   public Transform configurationVolume;
   public Transform configurationCursor;
+  [Range(-0.1f, 0.15f)]
+  public float inflation = 0f;
 
   const int resolution = 64;
   Texture3D configurationSpace;
@@ -43,7 +45,7 @@ public class ConfigurationSpace : MonoBehaviour {
     if (!textureComplete) {
       for (int i = 0; i < evaluationsPerFrame; i++) {
         //Find the distance to the nearest joint
-        float distance = distanceToNearestObstructor();
+        float distance = distanceToNearestObstructor() + inflation;
 
         //Write to the configuration space texture array
         //The 0-1 range here encodes the -50cm to +50cm range of distance values as a float
@@ -72,6 +74,8 @@ public class ConfigurationSpace : MonoBehaviour {
       localSphere = new Vector3(Mathf.Clamp(localSphere.x, -0.5f, 0.5f), Mathf.Clamp(localSphere.y, -0.5f, 0.5f), Mathf.Clamp(localSphere.z, -0.5f, 0.5f));
       configurationCursor.position = configurationVolume.TransformPoint(localSphere);
     }
+
+    volumeMaterial.SetFloat("_Inflation", inflation);
   }
 
   //Increment the joint angles on the arm to sweep through the configuration space
@@ -137,7 +141,7 @@ public class ConfigurationSpace : MonoBehaviour {
       //Update the minimum distance
       distance = (distance > jointDistance) ? jointDistance : distance;
     }
-    return distance;
+    return distance - inflation;
   }
 
   //Simple helper function that returns the distance between an (unscaled) capsule collider and a plane

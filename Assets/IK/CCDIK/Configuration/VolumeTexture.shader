@@ -33,6 +33,7 @@
 			};
 
 			sampler3D _MainTex;
+			float _Inflation;
 			
 			v2f vert (appdata v) {
 				v2f o;
@@ -45,7 +46,7 @@
 			}
 
 			float sampleDistanceField(float3 pos) {
-				return DecodeFloatRGBA(tex3D( _MainTex, pos + 0.5))-0.5;
+				return (DecodeFloatRGBA(tex3D( _MainTex, pos + 0.5))-0.5)-_Inflation;
 			}
 
 			float3 calcNormal( in float3 pos ) {
