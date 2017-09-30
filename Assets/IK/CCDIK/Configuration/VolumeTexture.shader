@@ -14,6 +14,7 @@ Shader "Unlit/VolumeTexture"
 		Pass
 		{
 			Blend SrcAlpha OneMinusSrcAlpha
+			Cull Off
 
 			CGPROGRAM
 			#pragma vertex vert
@@ -30,7 +31,7 @@ Shader "Unlit/VolumeTexture"
 
 			struct v2f
 			{
-				float3 wPos : TEXCOORD0;
+				float3 camPos : TEXCOORD0;
 				float4 lPos : TEXCOORD1;
 				float3 viewDir : TEXCOORD2;
 				float3 lightDir : TEXCOORD3;
@@ -42,7 +43,7 @@ Shader "Unlit/VolumeTexture"
 			v2f vert (appdata v)
 			{
 				v2f o;
-				o.wPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+				o.camPos = mul(unity_WorldToObject, _WorldSpaceCameraPos).xyz;
 				o.lPos = v.vertex;
 				o.viewDir = ObjSpaceViewDir( v.vertex );
 				o.vertex = UnityObjectToClipPos(v.vertex);
@@ -81,32 +82,36 @@ Shader "Unlit/VolumeTexture"
 				 return frac(sin( dot(co.xyz ,float3(12.9898,78.233,45.5432) )) * 43758.5453);
 			 }
 			
-			void frag (v2f i, out fixed4 col:SV_Target)
-			{
-				float3 startingPos = i.lPos.xyz;
-				float3 lightDir = i.lightDir;
-				//startingPos = planeAlignment(i.screenPos);
-
-				float3 viewDirection = normalize(i.viewDir);
-				float alpha = (rand(startingPos)*0.006)+0.02;
-				float4 colorSum = 0.0;
+			//Not my proudest shader; 2am code...
+			void frag (v2f i, out fixed4 col:SV_Target) {
+				//Initialize variables
 				bool valid = true; //A trick to make compilation times faster since "break" breaks compilation speed
+				float4 colorSum = 0.0;
+				float3 lightDir = i.lightDir;
+				float3 startingPos = i.lPos.xyz;
+				float3 viewDirection = normalize(i.viewDir);
+				float alpha = (rand(startingPos)*0.01)+0.02;
+				float3 camPos = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos, 1.0));
 
-				for(int i=1; i<40; i++){
-				  float3 pos = startingPos - (viewDirection*(i*alpha));
+				//Ghetto inside-of-shape support
+				if(max(max(abs(camPos.x), abs(camPos.y)), abs(camPos.z)) < 0.6) {
+					startingPos = camPos;
+					alpha += 0.11;
+				}
+
+				for(int i=1; i<100; i++){
+				  float3 pos = startingPos - (viewDirection*alpha);
 				  if(valid && (abs(pos.x)>0.499 || abs(pos.y)>0.499 ||abs(pos.z)>0.499)){
 						valid = false;
 				  }
 
 				  float dist = sampleDistanceField(pos);
-				  alpha += dist*0.006;
 				  if(valid && dist < 0.001){
 						float brightness = (dot(normalize(lightDir), calcNormal(pos))+0.85)*0.5;
 						colorSum = float4(brightness, brightness, brightness, 1.0);
 						valid = false;
 				  }
-
-				  //colorSum += clamp(sampleDistanceField(pos), 0.0, 1.0)*0.1;//max(0,(0.5-length(pos))*0.1);//
+				  alpha += dist*0.5;
 				}
 
 				col = colorSum;
