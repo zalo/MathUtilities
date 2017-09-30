@@ -30,7 +30,7 @@ public class ConfigurationSpace : MonoBehaviour {
     joints[3].transform.localRotation = Quaternion.Euler(joints[3].axis * ((curArm1 * arm1Step) - arm1HalfRange));
     joints[4].transform.localRotation = Quaternion.Euler(joints[4].axis * ((curTwist * twistStep) - twistHalfRange));
 
-    volumeMaterial.mainTexture = configurationSpace;
+    if (volumeMaterial.mainTexture == null) { volumeMaterial.mainTexture = configurationSpace; }
   }
 
   //Incrementally update the configuration space evaluation

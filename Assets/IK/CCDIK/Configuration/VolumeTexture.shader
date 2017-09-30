@@ -33,7 +33,7 @@ Shader "Unlit/VolumeTexture"
 				float3 wPos : TEXCOORD0;
 				float4 lPos : TEXCOORD1;
 				float3 viewDir : TEXCOORD2;
-				float4 screenPos : TEXCOORD3;
+				float3 lightDir : TEXCOORD3;
 				float4 vertex : SV_POSITION;
 			};
 
@@ -44,9 +44,9 @@ Shader "Unlit/VolumeTexture"
 				v2f o;
 				o.wPos = mul(unity_ObjectToWorld, v.vertex).xyz;
 				o.lPos = v.vertex;
-				o.viewDir = normalize(ObjSpaceViewDir( v.vertex ));
+				o.viewDir = ObjSpaceViewDir( v.vertex );
 				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.screenPos = ComputeScreenPos(o.vertex);
+				o.lightDir = ObjSpaceLightDir( v.vertex );
 				return o;
 			}
 
@@ -64,22 +64,49 @@ Shader "Unlit/VolumeTexture"
 				float3 offsetvec = localcamvec * 100 * planeoffset;
 				return float4(offsetvec, planeoffset * worldstepsize);
 			}
+
+			float sampleDistanceField(float3 pos){
+				return DecodeFloatRGBA(tex3D( _MainTex, pos - 0.5))-0.5;
+			}
+
+			float3 calcNormal( in float3 pos ) {
+				float2 e = float2(1.0,-1.0)*0.5773*0.005;
+				return normalize( e.xyy*sampleDistanceField( pos + e.xyy ).x + 
+								  e.yyx*sampleDistanceField( pos + e.yyx ).x + 
+								  e.yxy*sampleDistanceField( pos + e.yxy ).x + 
+								  e.xxx*sampleDistanceField( pos + e.xxx ).x );
+			}
+
+			 float rand(float3 co) {
+				 return frac(sin( dot(co.xyz ,float3(12.9898,78.233,45.5432) )) * 43758.5453);
+			 }
 			
 			void frag (v2f i, out fixed4 col:SV_Target)
 			{
 				float3 startingPos = i.lPos.xyz;
+				float3 lightDir = i.lightDir;
 				//startingPos = planeAlignment(i.screenPos);
 
-				float3 viewDirection = i.viewDir;
-				const float alpha = 0.015;
-				float colorSum = 0.0;
-				for(int i=0; i<100; i++){
+				float3 viewDirection = normalize(i.viewDir);
+				float alpha = (rand(startingPos)*0.006)+0.02;
+				float4 colorSum = 0.0;
+				bool valid = true; //A trick to make compilation times faster since "break" breaks compilation speed
+
+				for(int i=1; i<40; i++){
 				  float3 pos = startingPos - (viewDirection*(i*alpha));
-				  if(abs(pos.x)>0.5 || abs(pos.y)>0.5 ||abs(pos.z)>0.5){
-						break;
+				  if(valid && (abs(pos.x)>0.499 || abs(pos.y)>0.499 ||abs(pos.z)>0.499)){
+						valid = false;
 				  }
 
-				  colorSum += clamp(DecodeFloatRGBA(tex3D( _MainTex, pos - 0.5))-0.5, 0.0, 1.0)*0.1;//max(0,(0.5-length(pos))*0.1);//
+				  float dist = sampleDistanceField(pos);
+				  alpha += dist*0.006;
+				  if(valid && dist < 0.001){
+						float brightness = (dot(normalize(lightDir), calcNormal(pos))+0.85)*0.5;
+						colorSum = float4(brightness, brightness, brightness, 1.0);
+						valid = false;
+				  }
+
+				  //colorSum += clamp(sampleDistanceField(pos), 0.0, 1.0)*0.1;//max(0,(0.5-length(pos))*0.1);//
 				}
 
 				col = colorSum;
