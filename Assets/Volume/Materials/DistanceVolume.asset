@@ -13,7 +13,7 @@ CustomRenderTexture:
   m_Height: 64
   m_AntiAliasing: 1
   m_DepthFormat: 0
-  m_ColorFormat: 14
+  m_ColorFormat: 11
   m_MipMap: 0
   m_GenerateMips: 1
   m_SRGB: 0

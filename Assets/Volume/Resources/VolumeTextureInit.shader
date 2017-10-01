@@ -20,7 +20,7 @@
 
             float4 frag(v2f_init_customrendertexture IN) : COLOR
             {
-                return 1000.0;
+                return float4(1000.0, 1000.0, 1000.0, 1000.0);
             }
             ENDCG
         }

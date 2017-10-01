@@ -25,11 +25,11 @@
 			};
 
 			struct v2f {
-				float3 camPos : TEXCOORD0;
-				float4 lPos : TEXCOORD1;
-				float3 viewDir : TEXCOORD2;
-				float3 lightDir : TEXCOORD3;
 				float4 vertex : SV_POSITION;
+				float4 lPos : TEXCOORD0;
+				float3 viewDir : TEXCOORD1;
+				float3 lightDir : TEXCOORD2;
+				float3 camPos : TEXCOORD3;
 			};
 
 			sampler3D _MainTex;
@@ -37,24 +37,16 @@
 			
 			v2f vert (appdata v) {
 				v2f o;
-				o.camPos = mul(unity_WorldToObject, _WorldSpaceCameraPos).xyz;
+				o.vertex = UnityObjectToClipPos( v.vertex );
 				o.lPos = v.vertex;
 				o.viewDir = ObjSpaceViewDir( v.vertex );
-				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.lightDir = ObjSpaceLightDir( v.vertex );
+				o.camPos = mul(unity_WorldToObject, _WorldSpaceCameraPos).xyz;
 				return o;
 			}
 
 			float sampleDistanceField(float3 pos) {
-				return (tex3D( _MainTex, pos + 0.5).r)-_Inflation;
-			}
-
-			float3 calcNormal( in float3 pos ) {
-				float2 e = float2(1.0,-1.0)*0.02; //Increasing this number makes the shape look smoother
-				return normalize( e.xyy*sampleDistanceField( pos + e.xyy ).x + 
-								  e.yyx*sampleDistanceField( pos + e.yyx ).x + 
-								  e.yxy*sampleDistanceField( pos + e.yxy ).x + 
-								  e.xxx*sampleDistanceField( pos + e.xxx ).x );
+				return (tex3D( _MainTex, pos + 0.5).a)-_Inflation;
 			}
 			
 			//Not my proudest shader; 2am code...
@@ -79,11 +71,12 @@
 				  if(valid && (abs(pos.x)>0.501 || abs(pos.y)>0.501 || abs(pos.z)>0.501)){
 						valid = false;
 				  }
-
-				  float dist = sampleDistanceField(pos);
-				  if(valid && dist < 0.0015) {
-						//Once we've hit the surface, calculate the normal and display it
-						float brightness = (dot(normalize(lightDir), calcNormal(pos))+0.85)*0.5;
+					
+				  float4 sampledColor = tex3D( _MainTex, pos + 0.5);
+				  float dist = sampledColor.a - _Inflation;
+				  if(valid && dist < 0.001) {
+						//Once we've hit the surface display it with a simple dot product
+						float brightness = (dot(normalize(lightDir), (sampledColor.rgb))+0.85)*0.5;
 						colorSum = float4(brightness, brightness, brightness, 1.0);
 
 						//Also calculate the depth

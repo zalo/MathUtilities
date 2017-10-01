@@ -23,9 +23,13 @@
             float _Radius;
             float4 frag(v2f_customrendertexture IN) : COLOR
             {
-				float4 col = 0;
-                col.r = min(tex3D(_SelfTexture3D, IN.globalTexcoord + float3(0, 0, 0.5/_CustomRenderTextureDepth)), //Bilinear/Trilinear filtering introduces a half pixel offset in the Z-Axis
-							length(IN.globalTexcoord - _Center.xyz)-_Radius);
+				float4 col = tex3D(_SelfTexture3D, IN.globalTexcoord + float3(0, 0, 0.5/_CustomRenderTextureDepth));
+				float newDistance = length(IN.globalTexcoord - _Center.xyz) - _Radius;
+
+				if(newDistance<col.a){
+					col.rgb = normalize(IN.globalTexcoord-_Center.xyz);
+					col.a = newDistance;
+				}
 				return col;
             }
             ENDCG
