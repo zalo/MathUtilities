@@ -184,13 +184,13 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 844687363}
-  m_LocalRotation: {x: 0, y: 0.9238796, z: -0, w: -0.38268325}
-  m_LocalPosition: {x: 0.34, y: 4.3, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.529, z: -0.09}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
-  m_LocalEulerAnglesHint: {x: 0, y: 225, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1123421780
 GameObject:
   m_ObjectHideFlags: 0
@@ -249,13 +249,13 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1123421780}
-  m_LocalRotation: {x: -0.2983267, y: -0.2753851, z: 0.09033966, w: -0.90939707}
-  m_LocalPosition: {x: -0.97, y: 1.476, z: -1.412}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.1, z: -5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 36.324, y: 393.695, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1391952175
 GameObject:
   m_ObjectHideFlags: 0
@@ -266,7 +266,7 @@ GameObject:
   - component: {fileID: 1391952176}
   - component: {fileID: 1391952177}
   m_Layer: 0
-  m_Name: Lights
+  m_Name: Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -278,13 +278,13 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1391952175}
-  m_LocalRotation: {x: 0.34202012, y: -0, z: -0, w: 0.9396926}
-  m_LocalPosition: {x: 0, y: 1.4541001, z: 0}
+  m_LocalRotation: {x: 0.33159506, y: -0.23024148, z: 0.08380074, w: 0.9110494}
+  m_LocalPosition: {x: 0, y: 3.92, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
-  m_LocalEulerAnglesHint: {x: 40, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 40, y: -28.366001, z: 0}
 --- !u!108 &1391952177
 Light:
   m_ObjectHideFlags: 0
@@ -402,6 +402,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ac4b9c2fb49a214f9f846edad04c628, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  blittingTexture: {fileID: 8600000, guid: 0a9a243773cf3ba428378ad9935be6b4, type: 2}
   volumeMaterial: {fileID: 2100000, guid: ce4f6d9c7cb1d23468bed92b89565fb1, type: 2}
-  configurationVolume: {fileID: 1800548997}
+  sphereBlittingMaterial: {fileID: 2100000, guid: 8ab6047c7d6ff474c956516523be20c4,
+    type: 2}
   inflation: 0

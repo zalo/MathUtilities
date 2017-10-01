@@ -46,7 +46,7 @@
 			}
 
 			float sampleDistanceField(float3 pos) {
-				return (DecodeFloatRGBA(tex3D( _MainTex, pos + 0.5))-0.1)-_Inflation;
+				return (tex3D( _MainTex, pos + 0.5).r)-_Inflation;
 			}
 
 			float3 calcNormal( in float3 pos ) {
@@ -56,38 +56,37 @@
 								  e.yxy*sampleDistanceField( pos + e.yxy ).x + 
 								  e.xxx*sampleDistanceField( pos + e.xxx ).x );
 			}
-
-			 float rand(float3 co) {
-				 return frac(sin( dot(co.xyz ,float3(12.9898,78.233,45.5432) )) * 43758.5453);
-			 }
 			
 			//Not my proudest shader; 2am code...
 			void frag (v2f i, out fixed4 col:SV_Target, out float depth:SV_DEPTH) {
 				//Initialize variables
-				bool valid = true; //A trick to make compilation times faster since "break" breaks compilation speed
+				float alpha = 0;
+				bool valid = true; //A trick to make compilation times faster since "break" breaks compilation speed!
 				float4 colorSum = 0.0;
 				float3 lightDir = i.lightDir;
-				float3 startingPos = i.lPos.xyz;
 				float3 viewDirection = normalize(i.viewDir);
-				float alpha = (rand(startingPos)*0.01)+0.02;
-				float3 camPos = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos, 1.0));
 
 				//Ghetto inside-of-shape support
+				float3 startingPos = i.lPos.xyz;
+				float3 camPos = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos, 1.0));
 				if(max(max(abs(camPos.x), abs(camPos.y)), abs(camPos.z)) < 0.6) {
 					startingPos = camPos;
-					alpha += 0.11;
+					alpha += 0.2; //This is like the near clipping plane
 				}
 
 				for(int i=1; i<20; i++) {
 				  float3 pos = startingPos - (viewDirection*alpha);
-				  if(valid && (abs(pos.x)>0.499 || abs(pos.y)>0.499 || abs(pos.z)>0.499)){
+				  if(valid && (abs(pos.x)>0.501 || abs(pos.y)>0.501 || abs(pos.z)>0.501)){
 						valid = false;
 				  }
 
 				  float dist = sampleDistanceField(pos);
-				  if(valid && dist < 0.001) {
+				  if(valid && dist < 0.0015) {
+						//Once we've hit the surface, calculate the normal and display it
 						float brightness = (dot(normalize(lightDir), calcNormal(pos))+0.85)*0.5;
 						colorSum = float4(brightness, brightness, brightness, 1.0);
+
+						//Also calculate the depth
 						float4 pos_clip = UnityObjectToClipPos(float4(startingPos - (viewDirection*alpha), 1.0));
 						depth = pos_clip.z / pos_clip.w;
 						valid = false;
