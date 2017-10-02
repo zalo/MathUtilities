@@ -66,7 +66,7 @@
 					alpha += 0.2; //This is like the near clipping plane
 				}
 
-				for(int i=1; i<20; i++) {
+				for(int i=0; i<20; i++) {
 				  float3 pos = startingPos - (viewDirection*alpha);
 				  if(valid && (abs(pos.x)>0.501 || abs(pos.y)>0.501 || abs(pos.z)>0.501)){
 						valid = false;
