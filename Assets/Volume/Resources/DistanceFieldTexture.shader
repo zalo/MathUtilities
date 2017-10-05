@@ -53,7 +53,6 @@
 			void frag (v2f i, out fixed4 col:SV_Target, out float depth:SV_DEPTH) {
 				//Initialize variables
 				float alpha = 0;
-				bool valid = true; //A trick to make compilation times faster since "break" breaks compilation speed!
 				float4 colorSum = 0.0;
 				float3 lightDir = i.lightDir;
 				float3 viewDirection = normalize(i.viewDir);
@@ -68,13 +67,13 @@
 
 				for(int i=0; i<20; i++) {
 				  float3 pos = startingPos - (viewDirection*alpha);
-				  if(valid && (abs(pos.x)>0.501 || abs(pos.y)>0.501 || abs(pos.z)>0.501)){
-						valid = false;
+				  if(abs(pos.x)>0.501 || abs(pos.y)>0.501 || abs(pos.z)>0.501){
+						break;
 				  }
 					
 				  float4 sampledColor = tex3D( _MainTex, pos + 0.5);
 				  float dist = sampledColor.a - _Inflation;
-				  if(valid && dist < 0.001) {
+				  if(dist < 0.001) {
 						//Once we've hit the surface display it with a simple dot product
 						float brightness = (dot(normalize(lightDir), (sampledColor.rgb))+0.85)*0.5;
 						colorSum = float4(brightness, brightness, brightness, 1.0);
@@ -82,7 +81,7 @@
 						//Also calculate the depth
 						float4 pos_clip = UnityObjectToClipPos(float4(startingPos - (viewDirection*alpha), 1.0));
 						depth = pos_clip.z / pos_clip.w;
-						valid = false;
+						break;
 				  }
 				  alpha += dist;
 				}
