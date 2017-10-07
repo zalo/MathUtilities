@@ -8,10 +8,10 @@ public class StereoBundleAdjuster : MonoBehaviour {
   Vector3[][] rayDirections;
 
   KabschSolver solver = new KabschSolver();
-  Vector3[] inPoints, refPoints;
+  Vector4[] inPoints; Vector3[] refPoints;
 
   void Start() {
-    inPoints = new Vector3[features.Length * 4];
+    inPoints = new Vector4[features.Length * 4];
     refPoints = new Vector3[features.Length * 4];
     rayDirections = new Vector3[4][];
 
@@ -39,7 +39,7 @@ public class StereoBundleAdjuster : MonoBehaviour {
           Displacement(cameras[(cameraIndex / 2)    ].position, cameras[(cameraIndex / 2)    ].TransformPoint(rayDirections[(cameraIndex / 2)    ][i]),
                        cameras[(cameraIndex % 2) + 2].position, cameras[(cameraIndex % 2) + 2].TransformPoint(rayDirections[(cameraIndex % 2) + 2][i]), out pointLineOne, out pointLineTwo);
 
-          inPoints [(i * cameras.Length) + cameraIndex] = pointLineOne;
+          inPoints[(i * cameras.Length) + cameraIndex] = new Vector4(pointLineOne.x, pointLineOne.y, pointLineOne.z, 1f);// / (pointLineOne - pointLineTwo).sqrMagnitude);
           refPoints[(i * cameras.Length) + cameraIndex] = pointLineTwo;
 
           Debug.DrawLine(pointLineOne, pointLineTwo, Color.red);

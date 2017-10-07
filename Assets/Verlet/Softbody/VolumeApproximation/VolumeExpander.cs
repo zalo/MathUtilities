@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(MeshFilter))]
@@ -14,6 +15,7 @@ public class VolumeExpander : MonoBehaviour {
   protected Mesh bodyMesh;
   protected Vector3[] originalVerts;
   protected Vector3[] bodyVerts;
+  protected Vector4[] kabschVerts;
   protected Vector4[] accumulatedDisplacements;
   protected int[] bodyTriangles;
   protected Vector3[] bodyNormals;
@@ -30,6 +32,7 @@ public class VolumeExpander : MonoBehaviour {
     bodyMesh = Instantiate(filter.mesh);
     bodyMesh.MarkDynamic();
     bodyVerts = bodyMesh.vertices;
+    kabschVerts = Array.ConvertAll(bodyVerts, (p => new Vector4(p.x, p.y, p.z, 1f)));
     originalVerts = bodyMesh.vertices;
     bodyTriangles = bodyMesh.triangles;
     bodyNormals = bodyMesh.normals;
@@ -70,7 +73,8 @@ public class VolumeExpander : MonoBehaviour {
     }
 
     //Calculate the the position and rotation of the body
-    Matrix4x4 toWorldSpace = kabschSolver.SolveKabsch(originalVerts, bodyVerts);
+    for (int i = 0; i < bodyVerts.Length; i++) { kabschVerts[i] = new Vector4(bodyVerts[i].x, bodyVerts[i].y, bodyVerts[i].z, 1f); };
+    Matrix4x4 toWorldSpace = kabschSolver.SolveKabsch(originalVerts, Array.ConvertAll(bodyVerts, (p => (Vector4)p)));
     transform.position = toWorldSpace.GetVector3();
     transform.rotation = toWorldSpace.GetQuaternion();
 

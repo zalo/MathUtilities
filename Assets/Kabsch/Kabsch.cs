@@ -3,13 +3,13 @@ using UnityEngine.Profiling;
 public class Kabsch : MonoBehaviour {
   public Transform[] inPoints;
   public Transform[] referencePoints;
-  Vector3[] points, refPoints;
+  Vector3[] points; Vector4[] refPoints;
   KabschSolver solver = new KabschSolver();
 
   //Set up the Input Points
   void Start() {
     points = new Vector3[inPoints.Length];
-    refPoints = new Vector3[inPoints.Length];
+    refPoints = new Vector4[inPoints.Length];
     for (int i = 0; i < inPoints.Length; i++) {
       points[i] = inPoints[i].position;
     }
@@ -18,7 +18,7 @@ public class Kabsch : MonoBehaviour {
   //Calculate the Kabsch Transform and Apply it to the input points
   void Update() {
     for (int i = 0; i < inPoints.Length; i++) {
-      refPoints[i] = referencePoints[i].position;
+      refPoints[i] = new Vector4(referencePoints[i].position.x, referencePoints[i].position.y, referencePoints[i].position.z, referencePoints[i].localScale.x);
     }
 
     Matrix4x4 kabschTransform = solver.SolveKabsch(points, refPoints);
@@ -34,17 +34,20 @@ public class KabschSolver {
   Vector3[] QuatBasis = new Vector3[3];
   Vector3[] DataCovariance = new Vector3[3];
   Quaternion OptimalRotation = Quaternion.identity;
-  public Matrix4x4 SolveKabsch(Vector3[] inPoints, Vector3[] refPoints, bool solveRotation = true) {
+  public Matrix4x4 SolveKabsch(Vector3[] inPoints, Vector4[] refPoints, bool solveRotation = true) {
     if (inPoints.Length != refPoints.Length) { return Matrix4x4.identity; }
 
     //Calculate the centroid offset and construct the centroid-shifted point matrices
     Vector3 inCentroid = Vector3.zero; Vector3 refCentroid = Vector3.zero;
+    float inTotal = 0f, refTotal = 0f;
     for (int i = 0; i < inPoints.Length; i++) {
-      inCentroid += inPoints[i];
-      refCentroid += refPoints[i];
+      inCentroid += new Vector3(inPoints[i].x, inPoints[i].y, inPoints[i].z) * refPoints[i].w;
+      inTotal += refPoints[i].w;
+      refCentroid += new Vector3(refPoints[i].x, refPoints[i].y, refPoints[i].z) * refPoints[i].w;
+      refTotal += refPoints[i].w;
     }
-    inCentroid /= inPoints.Length;
-    refCentroid /= refPoints.Length;
+    inCentroid /= inTotal;
+    refCentroid /= refTotal;
 
     //Calculate the 3x3 covariance matrix, and the optimal rotation
     if (solveRotation) {
@@ -71,25 +74,25 @@ public class KabschSolver {
                        Vector3.Dot(QuatBasis[1], A[1]) +
                        Vector3.Dot(QuatBasis[2], A[2]) + 0.000000001f));
 
-      float w = Mathf.Clamp(omega.magnitude * Mathf.Rad2Deg, -20f, 20f); //How aggressive each iteration should be
+      float w = omega.magnitude;
       if (w < 0.000000001f)
         break;
-      q = Quaternion.AngleAxis(w, (1f / w) * omega) * q;
+      q = Quaternion.AngleAxis(w * Mathf.Rad2Deg, omega / w) * q;
       q = Quaternion.Lerp(q, q, 0f); //Normalizes the Quaternion; critical for error suppression
       Profiler.EndSample();
     }
   }
 
   //Calculate Covariance Matrices --------------------------------------------------
-  public static Vector3[] TransposeMultSubtract(Vector3[] vec1, Vector3[] vec2, Vector3 vec1Centroid, Vector3 vec2Centroid, Vector3[] covariance) {
+  public static Vector3[] TransposeMultSubtract(Vector3[] vec1, Vector4[] vec2, Vector3 vec1Centroid, Vector3 vec2Centroid, Vector3[] covariance) {
     Profiler.BeginSample("Calculate Covariance Matrix");
     for (int i = 0; i < 3; i++) { //i is the row in this matrix
       covariance[i] = Vector3.zero;
     }
     
     for (int k = 0; k < vec1.Length; k++) {//k is the column in this matrix
-      Vector3 left = vec1[k] - vec1Centroid;
-      Vector3 right = vec2[k] - vec2Centroid;
+      Vector3 left = (vec1[k] - vec1Centroid) * vec2[k].w;
+      Vector3 right = (new Vector3(vec2[k].x, vec2[k].y, vec2[k].z) - vec2Centroid) * Mathf.Abs(vec2[k].w);
 
       covariance[0][0] += left[0]*right[0];
       covariance[1][0] += left[1]*right[0];

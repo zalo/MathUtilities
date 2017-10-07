@@ -33,8 +33,8 @@ public class VerletCloth : MonoBehaviour {
 
   void Update() {
     //Physics
-    Verlet.Integrate(clothVerts, prevClothVerts, scaledGravity, Time.deltaTime, previousDeltaTime);
-    previousDeltaTime = Time.deltaTime;
+    Verlet.Integrate(clothVerts, prevClothVerts, scaledGravity, Time.smoothDeltaTime, previousDeltaTime);
+    previousDeltaTime = Time.smoothDeltaTime;
 
     //Anchor the Top Corner of the Cloth
     clothVerts[0] = prevClothVerts[0] = anchor1.position;

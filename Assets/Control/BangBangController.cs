@@ -31,7 +31,7 @@ public class BangBangController : MonoBehaviour {
            (currentVelocity >= 0f && currentPosition - target < -0.5f * Mathf.Pow(currentVelocity, 2f) / maxForceDividedByMass);
   }
 
-  int bangBangControllerWithZero(float currentPosition, float currentVelocity, float target, float maxForceDividedByMass, float epsilon = 0.0001f) {
+  int bangBangControllerWithZero(float currentPosition, float currentVelocity, float target, float maxForceDividedByMass, float epsilon = 0.01f) {
     float disparity = currentPosition - target;
     float parabola = 0.5f * Mathf.Pow(currentVelocity, 2f) / maxForceDividedByMass;
     if ((currentVelocity <  0f && disparity + epsilon <= parabola) ||

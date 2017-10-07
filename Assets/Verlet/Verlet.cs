@@ -3,13 +3,13 @@ using UnityEngine;
 
 public static class Verlet {
   //Particle Verlet Integration
-  public static void Integrate(Vector3[] curPoints, Vector3[] prevPoints, Vector3 gravity, float deltaTime = 1f, float prevDeltaTime = 1f) {
+  public static void Integrate(Vector3[] curPoints, Vector3[] prevPoints, Vector3 gravity, float deltaTime = 0.01f, float prevDeltaTime = 0.01f) {
     for (int i = 0; i < curPoints.Length; i++) {
       //Grab State from Previous Frame
       Vector3 tempPos = curPoints[i];
 
       //Integrate Position
-      curPoints[i] += (curPoints[i] - prevPoints[i]) * (deltaTime / prevDeltaTime) + (gravity * deltaTime * deltaTime);
+      curPoints[i] += ((curPoints[i] - prevPoints[i]) * (deltaTime / prevDeltaTime)) + (gravity * deltaTime * deltaTime);
 
       //Store State from Previous Frame
       prevPoints[i] = tempPos;

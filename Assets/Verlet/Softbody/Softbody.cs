@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(MeshFilter))]
@@ -16,6 +17,7 @@ public class Softbody : MonoBehaviour {
   protected Mesh bodyMesh;
   protected Vector3[] originalVerts;
   protected Vector3[] bodyVerts;
+  protected Vector4[] kabschVerts;
   protected Vector3[] prevBodyVerts;
   protected Vector4[] accumulatedDisplacements;
   protected int[] bodyTriangles;
@@ -34,6 +36,7 @@ public class Softbody : MonoBehaviour {
     bodyMesh = Instantiate(filter.mesh);
     bodyMesh.MarkDynamic();
     bodyVerts = bodyMesh.vertices;
+    kabschVerts = Array.ConvertAll(bodyVerts, (p => new Vector4(p.x, p.y, p.z, 1f)));
     originalVerts = bodyMesh.vertices;
     bodyTriangles = bodyMesh.triangles;
     bodyNormals = bodyMesh.normals;
@@ -62,7 +65,7 @@ public class Softbody : MonoBehaviour {
     }
 
     //Physics
-    float currentDeltaTime = Mathf.Clamp(Time.deltaTime, 0.01f, previousDeltaTime * 1.4f);
+    float currentDeltaTime = Mathf.Clamp(Time.smoothDeltaTime, 0.01f, previousDeltaTime * 1.4f);
     Verlet.Integrate(bodyVerts, prevBodyVerts, scaledGravity, currentDeltaTime, previousDeltaTime);
     previousDeltaTime = currentDeltaTime;
 
@@ -83,14 +86,15 @@ public class Softbody : MonoBehaviour {
     Vector3 groundPlanePos = groundPlane.position;
     Vector3 groundPlaneNormal = -groundPlane.forward;
     for (int j = 0; j < bodyVerts.Length; j++) {
-      if (Vector3.Dot(bodyVerts[j]-groundPlanePos, groundPlaneNormal) < 0f) {
+      if (Vector3.Dot(bodyVerts[j] - groundPlanePos, groundPlaneNormal) < 0f) {
         bodyVerts[j] = Vector3.ProjectOnPlane(bodyVerts[j] - groundPlanePos, groundPlaneNormal) + groundPlanePos;
         bodyVerts[j] -= Vector3.ProjectOnPlane(bodyVerts[j] - prevBodyVerts[j], groundPlaneNormal) * 0.3f;
       }
     }
 
     //Calculate the the position and rotation of the body
-    Matrix4x4 toWorldSpace = kabschSolver.SolveKabsch(originalVerts, bodyVerts, transformFollowsRotation);
+    for (int i = 0; i < bodyVerts.Length; i++) { kabschVerts[i] = new Vector4(bodyVerts[i].x, bodyVerts[i].y, bodyVerts[i].z, 1f); };
+    Matrix4x4 toWorldSpace = kabschSolver.SolveKabsch(originalVerts, kabschVerts, transformFollowsRotation);
     transform.position = toWorldSpace.GetVector3();
     transform.rotation = toWorldSpace.GetQuaternion();
 

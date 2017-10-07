@@ -7,9 +7,9 @@ public class BundleAdjuster : MonoBehaviour {
   Vector3[][] rayDirections;
 
   KabschSolver solver = new KabschSolver();
-  Vector3[] inPoints, refPoints;
+  Vector4[] inPoints; Vector3[] refPoints;
   void Start () {
-    inPoints = new Vector3[features.Length];
+    inPoints = new Vector4[features.Length];
     refPoints = new Vector3[features.Length];
     rayDirections = new Vector3[2][];
 
@@ -33,8 +33,10 @@ public class BundleAdjuster : MonoBehaviour {
         //Take the abs of the times so they can't intersect behind the camera
         timeLineOne = Mathf.Abs(timeLineOne); timeLineTwo = Mathf.Abs(timeLineTwo);
 
-        inPoints[i] = Vector3.LerpUnclamped(cameras[0].position, cameras[0].TransformPoint(rayDirections[0][i]), timeLineOne);
+        Vector3 tempInPoint = Vector3.LerpUnclamped(cameras[0].position, cameras[0].TransformPoint(rayDirections[0][i]), timeLineOne);
         refPoints[i] = Vector3.LerpUnclamped(cameras[1].position, cameras[1].TransformPoint(rayDirections[1][i]), timeLineTwo);
+        inPoints[i] = new Vector4(tempInPoint.x, tempInPoint.y, tempInPoint.z, 1f);//(tempInPoint-refPoints[i]).sqrMagnitude);
+
         Debug.DrawLine(inPoints[i], refPoints[i], Color.red);
       }
 
