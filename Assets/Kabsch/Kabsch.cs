@@ -34,7 +34,8 @@ public class KabschSolver {
   Vector3[] QuatBasis = new Vector3[3];
   Vector3[] DataCovariance = new Vector3[3];
   Quaternion OptimalRotation = Quaternion.identity;
-  public Matrix4x4 SolveKabsch(Vector3[] inPoints, Vector4[] refPoints, bool solveRotation = true) {
+  public float scaleRatio = 1f;
+  public Matrix4x4 SolveKabsch(Vector3[] inPoints, Vector4[] refPoints, bool solveRotation = true, bool solveScale = false) {
     if (inPoints.Length != refPoints.Length) { return Matrix4x4.identity; }
 
     //Calculate the centroid offset and construct the centroid-shifted point matrices
@@ -49,6 +50,16 @@ public class KabschSolver {
     inCentroid /= inTotal;
     refCentroid /= refTotal;
 
+    //Calculate the scale ratio
+    if (solveScale) {
+      float inScale = 0f, refScale = 0f;
+      for (int i = 0; i < inPoints.Length; i++) {
+        inScale += (new Vector3(inPoints[i].x, inPoints[i].y, inPoints[i].z) - inCentroid).magnitude;
+        refScale += (new Vector3(refPoints[i].x, refPoints[i].y, refPoints[i].z) - refCentroid).magnitude;
+      }
+      scaleRatio = (refScale / inScale);
+    }
+
     //Calculate the 3x3 covariance matrix, and the optimal rotation
     if (solveRotation) {
       Profiler.BeginSample("Solve Optimal Rotation");
@@ -56,7 +67,7 @@ public class KabschSolver {
       Profiler.EndSample();
     }
 
-    return Matrix4x4.TRS(refCentroid,  Quaternion.identity, Vector3.one) *
+    return Matrix4x4.TRS(refCentroid,  Quaternion.identity, Vector3.one  * scaleRatio) *
            Matrix4x4.TRS(Vector3.zero, OptimalRotation,     Vector3.one) *
            Matrix4x4.TRS(-inCentroid,  Quaternion.identity, Vector3.one);
   }

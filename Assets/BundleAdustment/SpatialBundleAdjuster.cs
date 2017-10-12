@@ -39,7 +39,7 @@ public class SpatialBundleAdjuster : MonoBehaviour {
         Debug.DrawLine(features[i].position, inPoints[i], Color.red);
       }
 
-      Matrix4x4 iterationStep = solver.SolveKabsch(inPoints, refPoints, true);
+      Matrix4x4 iterationStep = solver.SolveKabsch(inPoints, refPoints, true, true);
       Matrix4x4 steppedTransform = iterationStep * aligningCamera.localToWorldMatrix;
       if (useLinearEstimate) {
         float stepScale = ((previousCost - currentCost) > 0.0000001f && iteration > 0) ? (previousCost / (previousCost - currentCost)) * 0.8f : 1f;

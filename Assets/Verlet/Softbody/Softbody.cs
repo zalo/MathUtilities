@@ -65,7 +65,7 @@ public class Softbody : MonoBehaviour {
     }
 
     //Physics
-    float currentDeltaTime = Mathf.Clamp(Time.smoothDeltaTime, 0.01f, previousDeltaTime * 1.4f);
+    float currentDeltaTime = Mathf.Clamp(Time.deltaTime, 0.01f, previousDeltaTime * 1.4f);
     Verlet.Integrate(bodyVerts, prevBodyVerts, scaledGravity, currentDeltaTime, previousDeltaTime);
     previousDeltaTime = currentDeltaTime;
 

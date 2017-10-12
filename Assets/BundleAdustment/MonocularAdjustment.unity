@@ -514,20 +514,6 @@ Light:
   m_Lightmapping: 4
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
-  m_FalloffTable:
-    m_Table[0]: 0
-    m_Table[1]: 0
-    m_Table[2]: 0
-    m_Table[3]: 0
-    m_Table[4]: 0
-    m_Table[5]: 0
-    m_Table[6]: 0
-    m_Table[7]: 0
-    m_Table[8]: 0
-    m_Table[9]: 0
-    m_Table[10]: 0
-    m_Table[11]: 0
-    m_Table[12]: 0
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
   m_ShadowRadius: 0
@@ -569,7 +555,7 @@ TextMesh:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 851695680}
-  m_Text: "Try dragging the \"AdjustingCamera\" \nout of place.  Watch it solve for
+  m_Text: "Try dragging the \"AligningCamera\" \nout of place.  Watch it solve for
     the\nposition that minimizes the distance \nbetween rays.\n\nNote that it will
     converge anywhere\nalong the x-axis, due to the \"scale\"\nbeing ill-defined."
   m_OffsetZ: 0
@@ -980,6 +966,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1486378348}
   - component: {fileID: 1486378347}
+  - component: {fileID: 1486378349}
   m_Layer: 0
   m_Name: Cameras
   m_TagString: Untagged
@@ -1027,6 +1014,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1486378349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1486378346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57b17f131070e0e45bd078378432c666, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  limitFrameRate: 1
 --- !u!1 &1719495862
 GameObject:
   m_ObjectHideFlags: 0
