@@ -178,7 +178,7 @@ public static class JsonSerializer {
     PrimitiveWrapper<List<TransformStruct>> transformStructWrapper = new PrimitiveWrapper<List<TransformStruct>>();
     transformStructWrapper = JsonUtility.FromJson<PrimitiveWrapper<List<TransformStruct>>>(json);
     createTransformHierarchy(ref transformStructWrapper.value__, ref referenceDictionary);
-    fillComponents(transformStructWrapper.value__, referenceDictionary);
+    fillComponents(transformStructWrapper.value__, ref referenceDictionary);
     return transformStructWrapper.value__;
   }
 
@@ -204,24 +204,11 @@ public static class JsonSerializer {
     }
   }
 
-  static void fillComponents(List<TransformStruct> transforms, Dictionary<int, Component> referenceDictionary) {
+  static void fillComponents(List<TransformStruct> transforms, ref Dictionary<int, Component> referenceDictionary) {
     for (int i = 0; i < transforms.Count; i++) {
       for (int j = 0; j < transforms[i].components.Length; j++) {
         if (transforms[i].components[j].sanitizedJson != string.Empty) {
-          //Replace the instance IDs in this string with the IDs of components from our dictionary
-          //Want to match strings like: {\"instanceID\":12148
-          string pattern = "{\"instanceID\":-?[0-9]+";
-          transforms[i].components[j].sanitizedJson =
-            Regex.Replace(transforms[i].components[j].sanitizedJson, pattern, new MatchEvaluator((match) => {
-              //Debug.Log("Match: " + match.Value + " at index [" + match.Index + ", " + (match.Index + match.Length) + "]");
-              Component comp;
-              if (referenceDictionary.TryGetValue(int.Parse(match.Value.Substring(14)), out comp)) {
-                return "{\"instanceID\":" + comp.GetInstanceID();
-              } else {
-                return match.Value;
-              }
-            }));
-          JsonUtility.FromJsonOverwrite(transforms[i].components[j].sanitizedJson, referenceDictionary[transforms[i].components[j].instanceID]);
+          JsonUtility.FromJsonOverwrite(fixReferences(transforms[i].components[j].sanitizedJson, referenceDictionary), referenceDictionary[transforms[i].components[j].instanceID]);
         } else {
           deserializeEngineComponent(ref transforms[i].components[j], referenceDictionary[transforms[i].components[j].instanceID], ref referenceDictionary);
         }
@@ -238,7 +225,7 @@ public static class JsonSerializer {
         string componentJson = JsonUtility.ToJson(obj);
         if (componentJson != "{}") {
           try {
-            info.SetValue(toFill, JsonUtility.FromJson(component.enginePropertyValues[i], obj.GetType()), null);
+            info.SetValue(toFill, JsonUtility.FromJson(fixReferences(component.enginePropertyValues[i], referenceDictionary), obj.GetType()), null);
           } catch (NullReferenceException e) {
             try {
               Component referencedComponent;
@@ -274,6 +261,22 @@ public static class JsonSerializer {
         }
       } catch { }
     }
+  }
+
+  static string fixReferences(string json, Dictionary<int, Component> referenceDictionary) {
+    //Replace the instance IDs in this string with the IDs of components from our dictionary
+    //Want to match strings like: {\"instanceID\":12148
+    string pattern = "{\"instanceID\":-?[0-9]+";
+    return
+    Regex.Replace(json, pattern, new MatchEvaluator((match) => {
+      //Debug.Log("Match: " + match.Value + " at index [" + match.Index + ", " + (match.Index + match.Length) + "]");
+      Component comp;
+      if (referenceDictionary.TryGetValue(int.Parse(match.Value.Substring(14)), out comp)) {
+        return "{\"instanceID\":" + comp.GetInstanceID();
+      } else {
+        return match.Value;
+      }
+    }));
   }
 
   public static Type GetAssemblyType(string typeName) {
