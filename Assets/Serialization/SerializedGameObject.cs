@@ -2,6 +2,7 @@
 using UnityEngine;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 public class SerializedGameObject : MonoBehaviour {
   public List<JsonSerializer.TransformStruct> TransformHierarchy;
@@ -79,7 +80,7 @@ public static class JsonSerializer {
     Component[] components = inObject.GetComponents<Component>();
     for (int i = 0; i < components.Length; i++) {
       string typeName = components[i].GetType().ToString();
-      if (typeName != "SGameObject" && typeName != "UnityEngine.Transform") {
+      if (typeName != "SerializedGameObject" && typeName != "UnityEngine.Transform") {
         validComponentIndex++;
       }
     }
@@ -97,7 +98,7 @@ public static class JsonSerializer {
         serializeEngineComponent(ref component, ref components[i]);
       }
 
-      if (component.typeName != "SGameObject" && component.typeName != "UnityEngine.Transform") {
+      if (component.typeName != "SerializedGameObject" && component.typeName != "UnityEngine.Transform") {
         thisTransform.components[validComponentIndex] = component;
         validComponentIndex++;
       }
@@ -120,7 +121,7 @@ public static class JsonSerializer {
     for (int j = 0; j < info.Length; j++) {
       if (info[j].CanRead) {
         object[] Attributes = info[j].GetCustomAttributes(false);
-        if (!(Attributes != null && Attributes.Length>0 && Attributes[0] is ObsoleteAttribute)) {
+        if (!(Attributes != null && Attributes.Length > 0 && Attributes[0] is ObsoleteAttribute)) {
           try {
             object obj = info[j].GetValue(toSerialize, null);
             string componentJson = JsonUtility.ToJson(obj);
@@ -163,7 +164,7 @@ public static class JsonSerializer {
                 component.enginePropertyValues.Add(componentJson);
               }
             } catch {
-              Debug.LogWarning(toSerialize.name + "'s " + info[j].Name + "'s reference failed to serialize with: \n"+e, toSerialize);
+              Debug.LogWarning(toSerialize.name + "'s " + info[j].Name + "'s reference failed to serialize with: \n" + e, toSerialize);
             }
           } catch { }
         }
@@ -177,7 +178,7 @@ public static class JsonSerializer {
     PrimitiveWrapper<List<TransformStruct>> transformStructWrapper = new PrimitiveWrapper<List<TransformStruct>>();
     transformStructWrapper = JsonUtility.FromJson<PrimitiveWrapper<List<TransformStruct>>>(json);
     createTransformHierarchy(ref transformStructWrapper.value__, ref referenceDictionary);
-    fillComponents(transformStructWrapper.value__, ref referenceDictionary);
+    fillComponents(transformStructWrapper.value__, referenceDictionary);
     return transformStructWrapper.value__;
   }
 
@@ -203,11 +204,23 @@ public static class JsonSerializer {
     }
   }
 
-  static void fillComponents(List<TransformStruct> transforms, ref Dictionary<int, Component> referenceDictionary) {
+  static void fillComponents(List<TransformStruct> transforms, Dictionary<int, Component> referenceDictionary) {
     for (int i = 0; i < transforms.Count; i++) {
       for (int j = 0; j < transforms[i].components.Length; j++) {
         if (transforms[i].components[j].sanitizedJson != string.Empty) {
-          //TODO: Still need to go into the serialized references here and fix the instance ID's
+          //Replace the instance IDs in this string with the IDs of components from our dictionary
+          //Want to match strings like: {\"instanceID\":12148
+          string pattern = "{\"instanceID\":-?[0-9]+";
+          transforms[i].components[j].sanitizedJson =
+            Regex.Replace(transforms[i].components[j].sanitizedJson, pattern, new MatchEvaluator((match) => {
+              //Debug.Log("Match: " + match.Value + " at index [" + match.Index + ", " + (match.Index + match.Length) + "]");
+              Component comp;
+              if (referenceDictionary.TryGetValue(int.Parse(match.Value.Substring(14)), out comp)) {
+                return "{\"instanceID\":" + comp.GetInstanceID();
+              } else {
+                return match.Value;
+              }
+            }));
           JsonUtility.FromJsonOverwrite(transforms[i].components[j].sanitizedJson, referenceDictionary[transforms[i].components[j].instanceID]);
         } else {
           deserializeEngineComponent(ref transforms[i].components[j], referenceDictionary[transforms[i].components[j].instanceID], ref referenceDictionary);
@@ -216,7 +229,7 @@ public static class JsonSerializer {
     }
   }
 
-   static void deserializeEngineComponent<T>(ref ComponentStruct component, T toFill, ref Dictionary<int, Component> referenceDictionary) where T : Component {
+  static void deserializeEngineComponent<T>(ref ComponentStruct component, T toFill, ref Dictionary<int, Component> referenceDictionary) where T : Component {
     //Deserialize the properties of this engine component
     for (int i = 0; i < component.enginePropertyNames.Count; i++) {
       PropertyInfo info = toFill.GetType().GetProperty(component.enginePropertyNames[i]);
@@ -226,7 +239,7 @@ public static class JsonSerializer {
         if (componentJson != "{}") {
           try {
             info.SetValue(toFill, JsonUtility.FromJson(component.enginePropertyValues[i], obj.GetType()), null);
-          } catch (NullReferenceException e){
+          } catch (NullReferenceException e) {
             try {
               Component referencedComponent;
               if (referenceDictionary.TryGetValue(JsonUtility.FromJson<PrimitiveWrapper<int>>(component.enginePropertyValues[i]).value__, out referencedComponent)) {
@@ -236,7 +249,7 @@ public static class JsonSerializer {
               Debug.LogWarning(toFill.name + "'s " + info.Name + "'s reference failed to serialize with: \n" + e, toFill);
             }
           }
-          } else {
+        } else {
           if (obj is System.Single) {
             info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<System.Single>>(component.enginePropertyValues[i]).value__, null);
           } else if (obj is System.Single[]) {
