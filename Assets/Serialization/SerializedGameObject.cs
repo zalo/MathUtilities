@@ -54,19 +54,24 @@ public static class JsonSerializer {
     int index = 0;
     Queue<Transform> transformQueue = new Queue<Transform>();
     List<TransformStruct> transformList = new List<TransformStruct>();
+    Dictionary<Type, Component> defaultComponentDictionary = new Dictionary<Type, Component>();
+    GameObject defaultComponentContainer = new GameObject("DELETEME");
 
     //Add the first transform to the Hierarchy
-    addTransform(inObject, transformList, transformQueue, ref index);
+    addTransform(inObject, transformList, transformQueue, ref defaultComponentDictionary, ref defaultComponentContainer, ref index);
 
     //While there are children remaining in the queue, add them to the hierarchy
     while (transformQueue.Count > 0) {
-      addTransform(transformQueue.Dequeue(), transformList, transformQueue, ref index);
+      addTransform(transformQueue.Dequeue(), transformList, transformQueue, ref defaultComponentDictionary, ref defaultComponentContainer, ref index);
     }
+
+    UnityEngine.Object.Destroy(defaultComponentContainer);
 
     return JsonUtility.ToJson(createPrimWrapper(transformList), prettyPrint);
   }
 
-  static void addTransform(Transform inObject, List<TransformStruct> transforms, Queue<Transform> transformQueue, ref int index) {
+  static void addTransform(Transform inObject, List<TransformStruct> transforms, Queue<Transform> transformQueue, 
+    ref Dictionary<Type, Component> defaultComponentDictionary, ref GameObject defaultComponentContainer, ref int index) {
     //Construct this transform as a TransformStruct
     TransformStruct thisTransform = new TransformStruct();
     thisTransform.name = inObject.name;
@@ -91,14 +96,20 @@ public static class JsonSerializer {
     for (int i = 0; i < components.Length; i++) {
       ComponentStruct component = new ComponentStruct();
       component.typeName = components[i].GetType().ToString();
-      component.instanceID = components[i].GetInstanceID();
-      if (!component.typeName.StartsWith("UnityEngine.")) {
-        component.sanitizedJson = JsonUtility.ToJson(components[i]);
-      } else {
-        serializeEngineComponent(ref component, ref components[i]);
-      }
 
       if (component.typeName != "SerializedGameObject" && component.typeName != "UnityEngine.Transform") {
+        component.instanceID = components[i].GetInstanceID();
+        if (!component.typeName.StartsWith("UnityEngine.")) {
+          component.sanitizedJson = JsonUtility.ToJson(components[i]);
+        } else {
+          Component defaultComponent;
+          if (!defaultComponentDictionary.TryGetValue(components[i].GetType(), out defaultComponent)) {
+            defaultComponent = defaultComponentContainer.AddComponent(components[i].GetType());
+            defaultComponentDictionary.Add(components[i].GetType(), defaultComponent);
+          }
+          serializeEngineComponent(ref component, ref components[i], defaultComponent);
+        }
+
         thisTransform.components[validComponentIndex] = component;
         validComponentIndex++;
       }
@@ -113,63 +124,77 @@ public static class JsonSerializer {
     transforms.Add(thisTransform);
   }
 
-  static void serializeEngineComponent<T>(ref ComponentStruct component, ref T toSerialize) where T : Component {
+  static void serializeEngineComponent<T>(ref ComponentStruct component, ref T toSerialize, T defaultComponent) where T : Component {
     //Serialize the public properties of this engine component
     PropertyInfo[] info = GetAssemblyType(component.typeName).GetProperties();
     component.enginePropertyNames = new List<string>();
     component.enginePropertyValues = new List<string>();
     for (int j = 0; j < info.Length; j++) {
-      if (info[j].CanRead) {
-        object[] Attributes = info[j].GetCustomAttributes(false);
-        if (!(Attributes != null && Attributes.Length > 0 && Attributes[0] is ObsoleteAttribute)) {
+      string json = serializeProperty(info[j], ref toSerialize);
+      string defaultJson = serializeProperty(info[j], ref defaultComponent);
+      if (json != "" && json != defaultJson) {
+        component.enginePropertyNames.Add(info[j].Name);
+        component.enginePropertyValues.Add(json);
+      }
+    }
+  }
+
+  static string serializeProperty<T>(PropertyInfo info, ref T toSerialize) where T : Component {
+    if (info.CanRead) {
+      object[] Attributes = info.GetCustomAttributes(false);
+      if (!(Attributes != null && Attributes.Length > 0 && Attributes[0] is ObsoleteAttribute)) {
+        try {
+          object obj = info.GetValue(toSerialize, null);
+          string componentJson = JsonUtility.ToJson(obj);
+          if (componentJson == "{}") {
+            if (obj is System.Single) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((System.Single)obj));
+            } else if (obj is System.Single[]) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((System.Single[])obj));
+            } else if (obj is System.Boolean) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((System.Boolean)obj));
+            } else if (obj is System.Int32) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((System.Int32)obj));
+            } else if (obj is System.String) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((System.String)obj));
+            } else if (obj is Rect) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((Rect)obj));
+            } else if (obj is Bounds) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((Bounds)obj));
+            } else if (obj is UnityEngine.SceneManagement.Scene) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((UnityEngine.SceneManagement.Scene)obj));
+            } else if (obj is Camera[]) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((Camera[])obj));
+            } else if (obj is Material[]) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((Material[])obj));
+            } else {
+              Debug.LogWarning("Serialization Primitive not supported... yet: " + obj.GetType(), toSerialize);
+            }
+          }
+          if (componentJson != string.Empty && componentJson != "{}" && info.CanWrite) {
+            return componentJson;
+          }
+        } catch (ArgumentException e) {
+          //If it's an engine component, try serializing the reference (instance id)
           try {
-            object obj = info[j].GetValue(toSerialize, null);
-            string componentJson = JsonUtility.ToJson(obj);
-            if (componentJson == "{}") {
-              if (obj is System.Single) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((System.Single)obj));
-              } else if (obj is System.Single[]) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((System.Single[])obj));
-              } else if (obj is System.Boolean) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((System.Boolean)obj));
-              } else if (obj is System.Int32) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((System.Int32)obj));
-              } else if (obj is System.String) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((System.String)obj));
-              } else if (obj is Rect) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((Rect)obj));
-              } else if (obj is Bounds) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((Bounds)obj));
-              } else if (obj is UnityEngine.SceneManagement.Scene) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((UnityEngine.SceneManagement.Scene)obj));
-              } else if (obj is Camera[]) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((Camera[])obj));
-              } else if (obj is Material[]) {
-                componentJson = JsonUtility.ToJson(createPrimWrapper((Material[])obj));
-              } else {
-                Debug.LogWarning("Serialization Primitive not supported... yet: " + obj.GetType(), toSerialize);
-              }
+            object obj = info.GetValue(toSerialize, null);
+            string componentJson = JsonUtility.ToJson(createPrimWrapper((obj as UnityEngine.Object).GetInstanceID()));
+            if (componentJson != string.Empty && componentJson != "{}" && info.CanWrite) {
+              return componentJson;
             }
-            if (componentJson != string.Empty && componentJson != "{}" && info[j].CanWrite) {
-              component.enginePropertyNames.Add(info[j].Name);
-              component.enginePropertyValues.Add(componentJson);
-            }
-          } catch (ArgumentException e) {
-            //If the above happens, try serializing the reference (instance id)
-            try {
-              object obj = info[j].GetValue(toSerialize, null);
-              string componentJson = JsonUtility.ToJson(createPrimWrapper((obj as UnityEngine.Object).GetInstanceID()));
-              if (componentJson != string.Empty && componentJson != "{}" && info[j].CanWrite) {
-                component.enginePropertyNames.Add(info[j].Name);
-                component.enginePropertyValues.Add(componentJson);
-              }
-            } catch {
-              Debug.LogWarning(toSerialize.name + "'s " + info[j].Name + "'s reference failed to serialize with: \n" + e, toSerialize);
-            }
-          } catch { }
+          } catch {
+            Debug.LogWarning(toSerialize.name + "'s " + info.Name + "'s reference failed to serialize with: \n" + e, toSerialize);
+          }
+        } catch (Exception e){
+          if (toSerialize != null) {
+            Debug.LogWarning(toSerialize.name + "'s " + info.Name + "'s reference failed to serialize with: \n" + e, toSerialize);
+          } else {
+            Debug.LogWarning("toSerialize is null!");
+          }
         }
       }
     }
+    return "";
   }
 
   //DESERIALIZE FROM A List<TransformStruct> -------------------------------------------------------------------------------
@@ -254,9 +279,9 @@ public static class JsonSerializer {
           } else if (obj is UnityEngine.SceneManagement.Scene) {
             info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<UnityEngine.SceneManagement.Scene>>(component.enginePropertyValues[i]).value__, null);
           } else if (obj is Camera[]) {
-            info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<Camera[]>>(component.enginePropertyValues[i]).value__, null);
+            info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<Camera[]>>(fixReferences(component.enginePropertyValues[i], referenceDictionary)).value__, null);
           } else if (obj is Material[]) {
-            info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<Material[]>>(component.enginePropertyValues[i]).value__, null);
+            info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<Material[]>>(fixReferences(component.enginePropertyValues[i], referenceDictionary)).value__, null);
           }
         }
       } catch { }
