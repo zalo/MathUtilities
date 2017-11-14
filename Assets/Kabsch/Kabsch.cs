@@ -132,4 +132,7 @@ public static class FromMatrixExtension {
     covariance[1] = q * Vector3.up;
     covariance[2] = q * Vector3.forward;
   }
+  public static Matrix4x4 Lerp(Matrix4x4 a, Matrix4x4 b, float alpha) {
+    return Matrix4x4.TRS(Vector3.Lerp(a.GetVector3(), b.GetVector3(), alpha), Quaternion.Slerp(a.GetQuaternion(), b.GetQuaternion(), alpha), Vector3.one);
+  }
 }
