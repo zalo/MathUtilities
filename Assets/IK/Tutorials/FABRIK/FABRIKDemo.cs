@@ -19,6 +19,8 @@ public class FABRIKDemo : MonoBehaviour {
 
     if (instant) {
       for (int j = 0; j < 4; j++) {
+        //Step back through all the joints and clamp their position to be within 2 units of the joint above it
+        //The "Forward Reaching" pass
         for (int i = joints.Length - 1; i >= 0; i--) {
           if (i == joints.Length - 1) {
             joints[i].position = target.position;
@@ -26,7 +28,9 @@ public class FABRIKDemo : MonoBehaviour {
             joints[i].position = joints[i].position.ConstrainDistance(joints[i + 1].position, 2f);
           }
         }
-        
+
+        //Step forward through all the joints and clamp their position to be within 2 units of the joint below it
+        //The "Backward Reaching" pass
         for (int i = 0; i < joints.Length; i++) {
           if (i == 0) {
             joints[i].position = Vector3.zero;
@@ -48,7 +52,7 @@ public class FABRIKDemo : MonoBehaviour {
             forward = false;
             origin = joints[currentJoint].position;
             destination = Vector3.zero;
-            status.text = "Backward Reaching Pass\nIteration: " + iterationNumber;
+            status.text = "Backward\nReaching Pass\nIteration: " + iterationNumber;
           }
         } else {
           if (currentJoint != joints.Length - 1) {
@@ -62,7 +66,7 @@ public class FABRIKDemo : MonoBehaviour {
             origin = joints[currentJoint].position;
             destination = target.position;
             iterationNumber++;
-            status.text = "Forward Reaching Pass\nIteration: " + iterationNumber;
+            status.text = "Forward\nReaching Pass\nIteration: " + iterationNumber;
           }
         }
         progress = 0f;
@@ -85,7 +89,7 @@ public class FABRIKDemo : MonoBehaviour {
     targetPrevPosition = target.position;
     progress = 0f;
     iterationNumber = 0;
-    status.text = "Forward Reaching Pass\nIteration: " + iterationNumber;
+    status.text = "Forward\nReaching Pass\nIteration: " + iterationNumber;
   }
 
   float easeInOutQuint(float t){ return t < .5 ? 16 * t * t * t * t * t : 1 + 16 * (--t) * t * t * t * t; }

@@ -35,7 +35,7 @@ public class Blob : MonoBehaviour {
       curPoints[i] += (curPoints[i] - prevPoints[i]) + ((Vector2)Physics.gravity * 0.001f);
       prevPoints[i] = tempPos;
     }
-    //curPoints[0] = transform.position;
+    //curPoints[0] = transform.position; //Allows you to drag the blob around
 
     //Accumulate displacements from constraints in accumulation buffer
     for (int k = 0; k < solverIterations; k++) {
@@ -54,7 +54,7 @@ public class Blob : MonoBehaviour {
         int j = (i == 0 ? curPoints.Length - 1 : i - 1);
         sum += (curPoints[i].x + curPoints[j].x) * (curPoints[i].y - curPoints[j].y);
       }
-      float deltaArea = area - (sum * 0.5f);
+      float deltaArea = (sum * 0.5f < area * 2f) ? area - (sum * 0.5f) : 0f; //Explosion resistance
       float dilationDistance = deltaArea / circumfrence;
 
       //Dilate the polygon by the distance required to acheieve the desired area

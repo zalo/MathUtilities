@@ -63,6 +63,10 @@ public class CCDIKDemo : MonoBehaviour {
       Gizmos.color = Color.red;
       Gizmos.DrawLine(joints[currentJoint].position, target.position);
       Gizmos.color = Color.white;
+      for (int i = 0; i < joints.Length - 1; i++) {
+        Gizmos.DrawLine(joints[i].position, joints[i + 1].position);
+      }
+      Gizmos.color = Color.green;
       Gizmos.DrawLine(joints[currentJoint].position, joints[joints.Length - 1].position);
     }
   }

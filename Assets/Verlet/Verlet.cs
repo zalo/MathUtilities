@@ -59,7 +59,7 @@ public static class Verlet {
     for (int i = 0; i < normals.Length; i++) { normals[i] = tempNorm[i]; }
   }
 
-  public static void setVolume(float desiredVolume, Vector3[] verts, Vector3[] normals, int[] triangles, float surfaceArea = 0f, bool equality = true, bool fastButGarbage = true) {
+  public static void setVolume(float desiredVolume, Vector3[] verts, Vector3[] normals, int[] triangles, float surfaceArea = 0f, bool equality = true, bool fastButGarbage = true, bool explosionResistance = true) {
     //Calculate the normals of each vertex...
     if (fastButGarbage) {
       RecalculateNormalsAlloc(verts, triangles, ref normals);
@@ -68,7 +68,9 @@ public static class Verlet {
     }
 
     //And the distance we have to dilate each vert to acheive the desired volume...
-    float deltaVolume = desiredVolume - VolumeOfMesh(verts, triangles);
+    float volumeOfMesh = VolumeOfMesh(verts, triangles);
+    float deltaVolume = desiredVolume - volumeOfMesh;
+    deltaVolume = (explosionResistance && volumeOfMesh > desiredVolume * 2f) ? 0f : deltaVolume; //Explosion resistance
     if (deltaVolume > 0 || equality) {
       float dilationDistance = deltaVolume / (surfaceArea == 0f ? SurfaceAreaOfMesh(verts, triangles) : surfaceArea);
 

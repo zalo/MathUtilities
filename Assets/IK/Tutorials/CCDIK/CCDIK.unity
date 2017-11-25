@@ -361,7 +361,7 @@ MonoBehaviour:
   - {fileID: 672285375}
   target: {fileID: 1838588834}
   status: {fileID: 1618168158}
-  speed: 1
+  speed: 0.5
   instant: 0
 --- !u!4 &1232758594
 Transform:
@@ -817,7 +817,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1618168157}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.32, y: 7.32, z: 0}
+  m_LocalPosition: {x: 0.68, y: 6.49, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
