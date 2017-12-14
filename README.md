@@ -50,13 +50,15 @@ However, because precomputing the configuration space is slow (and must be redon
 ## Other experiments:
 
 
-### Nelder-Mead (Amoeba) Numerical Optimizer
+### [Nelder-Mead (Amoeba) Numerical Optimizer](https://en.wikipedia.org/wiki/Nelder-Mead_method)
 <img src="https://i.imgur.com/IBsFoMd.gif">
-A general, n-dimensional implementation of [Nelder and Mead's numerical optimization method](https://en.wikipedia.org/wiki/Nelder-Mead_method) for minimizing cost functions.  This is a popular optimization technique for problems with high-dimensionality and no gradient information.  Included is an example of optimizing a 5-DoF IK system (far less efficient than CCDIK, but more flexible overall).  Also contains a numerical gradient descent optimizer for comparison.
+
+A general, n-dimensional implementation of Nelder and Mead's gradient-less numerical optimization method for minimizing cost functions.  This is a popular optimization technique for problems with high-dimensionality and no gradient information.  Included is an example of optimizing a 5-DoF IK system (far less efficient than CCDIK, but more flexible overall).  Also contains a numerical gradient descent optimizer for comparison.
 
 
 ### Linear Assignment
 A port of Roy Jonker's famous solution to the [Linear Assignment Problem](https://en.wikipedia.org/wiki/Assignment_problem).  Allows you to take two arbitrary lists of objects (with a cost to pair objects in each of them to each other), and to find the globally optimal pairing betweeing objects in these lists.  Extremely handy.
+
 See the source file for Commercial Licensing Details.
 
 
@@ -70,22 +72,27 @@ Demonstrates how to set up a shader to project a texture onto scene geometry usi
 
 ### Minkowski Difference Visualizer
 <img src="https://i.imgur.com/ZmAT3Sm.gif">
+
 Uses a compute shader to draw arbitrary 2D Minkowski "Differences" in real time.  The Minkowski Sum (and its modification, the "Minkowski Difference") is a core operation in collision detection.  This concept allows for a fully generalized way of determining whether any two objects are intersecting, and what the minimum translation is that separates them.  The key is determining whether the origin (of the coordinate system used in the operation) is inside of the resulting Minkowski Difference shape.   GJK is a collision detection technique that implements this check quickly for convex objects, with only a few samples of the implicit Minkowski Difference.
 
 
 ### Bidirectional Raycasting
 <img src="https://i.imgur.com/uTcYYPF.gif">
+
 Operates like a standard raycast, but returns both entry and exit information.  Useful for building wires that wrap around the environment and bullet entry/exit effects.
 
 
 ### [Bang-Bang Kinetic Time-Optimal Movement Controller](https://i.imgur.com/ptwHgew.gif)
 A special heuristic formula to compute the time-optimal movement trajectory for a double-integrating mass with limited thrust.
+
 Formula taken from this excellent course: http://underactuated.csail.mit.edu/underactuated.html?chapter=9
 
 
 ### Blossoming Trajectory Deformation
 <img src="https://i.imgur.com/Tm3a9by.gif">
+
 This is a technique for augmenting the end-point of trajectories composed of discrete segments, using a rigid-as-possible/"Blossing" (Bézier-like) interpolation scheme.  There's an implementation for both 3D and 6D trajectories.
+
 Inspired by this paper: https://april.eecs.umich.edu/media/pdfs/olson2006icra.pdf
 
 
