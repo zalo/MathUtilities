@@ -3,7 +3,7 @@
 public class DrawCapsule : MonoBehaviour {
   public Transform CapsuleStart;
   public Transform CapsuleEnd;
-  public float Radius = 1f;
+  public float RadiusStart = 1f, RadiusEnd = 1f; //Differing starting/ending radii is experimental
   public Mesh SphereMesh;
   public Material CapsuleMaterial;
 
@@ -13,7 +13,7 @@ public class DrawCapsule : MonoBehaviour {
   private Vector3[] capsuleNormals;
   private Vector3 midPoint;
   private float scale;
-  private float prevRadius = 1f;
+  private float prevRadiusStart = 1f, prevRadiusEnd = 1f;
 
   void Start() {
     capsuleMesh = Instantiate(SphereMesh);
@@ -24,9 +24,10 @@ public class DrawCapsule : MonoBehaviour {
   }
 
   void Update() {
-    if (CapsuleStart.hasChanged || CapsuleEnd.hasChanged || Radius != prevRadius) {
+    if (CapsuleStart.hasChanged || CapsuleEnd.hasChanged || RadiusStart != prevRadiusStart || RadiusEnd != prevRadiusEnd) {
       UpdateCapsuleMesh();
-      prevRadius = Radius;
+      prevRadiusStart = RadiusStart;
+      prevRadiusEnd = RadiusEnd;
       CapsuleStart.hasChanged = false;
       CapsuleEnd.hasChanged = false;
     }
@@ -35,7 +36,7 @@ public class DrawCapsule : MonoBehaviour {
   }
 
   void UpdateCapsuleMesh() {
-    scale = ((CapsuleStart.position - CapsuleEnd.position).magnitude + (Radius * 10f)); //2f is minimum, but 10f gets better vertex distribution on the Caps
+    scale = ((CapsuleStart.position - CapsuleEnd.position).magnitude + (Mathf.Max(RadiusStart, RadiusEnd) * 10f)); //2f is minimum, but 10f gets better vertex distribution on the Caps
     midPoint = (CapsuleStart.position + CapsuleEnd.position) * 0.5f;
 
     float invScale = 1f / scale;
@@ -43,9 +44,9 @@ public class DrawCapsule : MonoBehaviour {
     Vector3 localEnd = (CapsuleEnd.position - midPoint) * invScale;
 
     for (int i = 0; i < sphereVerts.Length; i++) {
-      Vector3 nearestPointOnSegment = sphereVerts[i].ConstrainToSegment(localStart, localEnd);
-      capsuleVerts[i] = sphereVerts[i].ConstrainDistance(nearestPointOnSegment, Radius * invScale);
-      capsuleNormals[i] = sphereVerts[i] - nearestPointOnSegment;
+      float bicapsuleTime = 0f;
+      capsuleVerts[i] = sphereVerts[i].closestPointToBiCapsule(localStart, localEnd, RadiusStart * invScale, RadiusEnd * invScale, out bicapsuleTime);
+      capsuleNormals[i] = sphereVerts[i] - Vector3.Lerp(localStart, localEnd, bicapsuleTime);
     }
 
     capsuleMesh.vertices = capsuleVerts;
