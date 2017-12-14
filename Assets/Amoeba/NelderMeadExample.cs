@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 
 public class NelderMeadExample : MonoBehaviour {
+  public float secondsPerIteration = 1f;
   const int dimensions = 3;
   Vector4[] debugPoints;
   NelderMead solver;
@@ -25,9 +26,9 @@ public class NelderMeadExample : MonoBehaviour {
   //Step the solver forward one iteration per second
   float updateTime = 0f;
   void Update() {
-    if (Time.time - updateTime >= 1f) {
+    if (Time.time - updateTime >= secondsPerIteration) {
       solver.stepSolver();
-      updateTime += 1f;
+      updateTime += secondsPerIteration;
     }
   }
 
