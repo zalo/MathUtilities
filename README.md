@@ -3,6 +3,11 @@ MathUtilities
 
 A grab bag of some of the neat math and physics tricks that I've amassed over the last few years, implemented in Unity's C#.  You're free to use the code here however you like.
 
+## Signed Distance Field Texture Rendering
+<img src="https://i.imgur.com/k7J0I7k.gif">
+
+A simple example for raymarching and painting/blitting-to volumetric distance field textures.  Distance Fields are regions of space that store the distance to the nearest surface at each point in space.  This property allows them to represent and render solid shapes of arbitrary geometry and topology.
+This particular implementation also stores the normalized vector toward the nearest point (the normal or gradient of the field).  This is useful for physics queries and lighting (without taking the numerical derivative).
 
 ## Kabsch
 <img src="http://i.imgur.com/2qhRmtN.gif">
@@ -38,6 +43,8 @@ A generic matrix class and a set of basic matrix operations (multiplication, add
 
 A set of constraint functions that can be used to build [an iterative inverse kinematics solver.](https://makeshifted.itch.io/dexter-arm-ik)
 
+### Inverse-Kinematics Illustrations: CCDIK vs FABRIK
+<img src="https://i.imgur.com/x2AkTX2.gif"> <img src="https://i.imgur.com/kPwSHU0.gif">
 
 
 ## Other experiments:
