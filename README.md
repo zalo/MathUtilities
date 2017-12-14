@@ -42,8 +42,7 @@ A set of constraint functions that can be used to build [an iterative inverse ki
 <img src="https://i.imgur.com/x2AkTX2.gif"> <img src="https://i.imgur.com/kPwSHU0.gif">
 
 
-### Robotic Configuration Space Visualization and Collision-Aware IK
-<img src="https://i.imgur.com/kHdEZto.png"> <img src="https://i.imgur.com/2BGw3vt.gif">
+### [Robotic Configuration Space Visualization](https://i.imgur.com/kHdEZto.png) and [Collision-Aware IK](https://i.imgur.com/2BGw3vt.gif)
 The "Configuration Space" can be visualized by graphing the penetration of a robot with it's environment (and itself) as a distance field, where each axis is the angle/configuration of an individual joint.  By path finding through valid regions in this space, one is actually planning the motion of the robot from one configuration to another.   The gradient of the configuration space can also be used for light depenetration of the robot from invalid configurations.
 However, because precomputing the configuration space is slow (and must be redone for objects in the environment), I developed a variant of CCDIK (CCCDIK :) ) which iteratively depenetrates itself from the environment by temporarily treating the contact point as a new end-effector.
 
@@ -53,7 +52,7 @@ However, because precomputing the configuration space is slow (and must be redon
 
 ### Nelder-Mead (Amoeba) Numerical Optimizer
 <img src="https://i.imgur.com/IBsFoMd.gif">
-A general, n-dimensional implementation of [Nelder and Mead's numerical optimization method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) for minimizing cost functions.  This is a popular optimization technique for problems with high-dimensionality and no gradient information.  Included is an example of optimizing a 5-DoF IK system (far less efficient than CCDIK, but more flexible overall).  Also contains a numerical gradient descent optimizer for comparison.
+A general, n-dimensional implementation of [Nelder and Mead's numerical optimization method](https://en.wikipedia.org/wiki/Nelder-Mead_method) for minimizing cost functions.  This is a popular optimization technique for problems with high-dimensionality and no gradient information.  Included is an example of optimizing a 5-DoF IK system (far less efficient than CCDIK, but more flexible overall).  Also contains a numerical gradient descent optimizer for comparison.
 
 
 ### Linear Assignment
