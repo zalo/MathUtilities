@@ -7,12 +7,14 @@ A grab bag of some of the neat math and physics tricks that I've amassed over th
 <img src="https://i.imgur.com/k7J0I7k.gif">
 
 A simple example for raymarching and painting/blitting-to volumetric distance field textures.  Distance Fields are regions of space that store the distance to the nearest surface at each point in space.  This property allows them to represent and render solid shapes of arbitrary geometry and topology.
+
 This particular implementation also stores the normalized vector toward the nearest point (the normal or gradient of the field).  This is useful for physics queries and lighting (without taking the numerical derivative).
 
 ## [Kabsch](https://github.com/zalo/MathUtilities/blob/master/Assets/Kabsch/Kabsch.cs)
 <img src="http://i.imgur.com/2qhRmtN.gif">
 
 Also known as Procrustes Analysis, this algorithm can take in an arbitrary set of point-pairs and find the globally optimal rigid translation and rotation to minimize the distance between those point pairs.  Incredibly useful, and very cheap.   Uses Matthias Muller's polar decomposition solver in place of SVD, as outlined here: https://animation.rwth-aachen.de/media/papers/2016-MIG-StableRotation.pdf
+
 Update: Added an example for averaging arbitrary numbers of quaternions; possibly more accurate than a normalized lerp (averaging the quaternion components in linear space and then normalizing).
 
 
@@ -37,6 +39,7 @@ A textbook implementation of a Kalman filter (transcribed from wikipedia)   Kalm
 <img src="http://i.imgur.com/uymJf1L.gif"> <img src="http://i.imgur.com/ov58hQH.gif">
 
 A set of constraint functions that can be used to build [an iterative inverse kinematics solver.](https://makeshifted.itch.io/dexter-arm-ik)
+
 [Nice introductory Tutorial to the concept behind CCDIK and the Kinematic Jacobian](http://www.elysium-labs.com/robotics-corner/learn-robotics/introduction-to-robotics/kinematic-jacobian/)
 
 ### Inverse-Kinematics: [CCDIK Illustration](https://github.com/zalo/MathUtilities/tree/master/Assets/IK/Tutorials/CCDIK) vs [FABRIK Illustration](https://github.com/zalo/MathUtilities/tree/master/Assets/IK/Tutorials/FABRIK)
@@ -51,7 +54,7 @@ However, because precomputing the configuration space is slow (and must be redon
 ## Other experiments:
 
 
-### [Nelder-Mead (Amoeba) Numerical Optimizer](https://github.com/zalo/MathUtilities/blob/master/Assets/Amoeba/NelderMead.cs) [[Wikipedia]](https://en.wikipedia.org/wiki/Nelder-Mead_method)
+### [Nelder-Mead (Amoeba) Numerical Optimizer](https://github.com/zalo/MathUtilities/blob/master/Assets/Amoeba/NelderMead.cs) [[Wiki]](https://en.wikipedia.org/wiki/Nelder-Mead_method)
 <img src="https://i.imgur.com/IBsFoMd.gif">
 
 A general, n-dimensional implementation of Nelder and Mead's gradient-less numerical optimization method for minimizing cost functions.  This is a popular optimization technique for problems with high-dimensionality and no gradient information.  Included is an example of optimizing a 5-DoF IK system (far less efficient than CCDIK, but more flexible overall).  Also contains a numerical gradient descent optimizer for comparison.

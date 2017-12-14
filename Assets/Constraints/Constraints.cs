@@ -40,10 +40,36 @@ public static class Constraints {
     return magnitude > radius ? onSegment + (displacement.normalized * radius) : position;
   }
 
-  public static Vector3 ClosestPointOnCapsule(Vector3 point, CapsuleCollider collider) {
+  public static Vector3 ClosestPointOnCapsule(this Vector3 point, CapsuleCollider collider) {
     Vector3 offset = (collider.direction == 0 ? Vector3.right : Vector3.up) * Mathf.Clamp01((collider.height * 0.5f) - collider.radius);
     Vector3 onSegment = ConstrainToSegment(point, collider.transform.TransformPoint(collider.center + offset), collider.transform.TransformPoint(collider.center - offset));
     return onSegment + ((point - onSegment).normalized * collider.radius);
+  }
+
+  //Implemented in real-time here:
+  //https://www.shadertoy.com/view/4l2cRW
+  public static Vector3 closestPointToBiCapsule(this Vector3 pos, Vector3 a, Vector3 b, float r1, float r2, out float capsuleTime) {
+    //Standard line segment closest point
+    Vector3 ba = b - a; float baMagnitude = ba.magnitude;
+    float alpha = (Vector3.Dot(pos - a, ba) / Vector3.Dot(ba, ba));
+    Vector3 capsuleSegmentPos = Vector3.Lerp(a, b, alpha);
+
+    //Calculate the offset along segment according to the slope of the bicapsule
+    float pointSphereRadius = r1 - r2; //This collapses the problem into finding the tangent angle for a point/sphere
+    float exsecantLength = ((baMagnitude / Mathf.Abs(pointSphereRadius)) - 1f) * baMagnitude;
+    float tangentAngle = Mathf.Acos(1.0f / (exsecantLength + 1.0f)); //This is also known as the "arcexsecant" function
+    float tangentOffset = (capsuleSegmentPos - pos).magnitude / Mathf.Tan(tangentAngle); //This is adjacent / tan(theta) = opposite
+    tangentOffset *= sign(pointSphereRadius); //Allows it to handle r2 > r1 as well
+
+    //And back to classic capsule closest point (with lerped radii)
+    capsuleTime = alpha - tangentOffset;
+    Vector3 bicapsuleSegmentPos = Vector3.Lerp(a, b, alpha - tangentOffset); float bicapsuleRadius = Mathf.Lerp(r1, r2, alpha - tangentOffset);
+    return bicapsuleSegmentPos + ((pos - bicapsuleSegmentPos).normalized * bicapsuleRadius);
+  }
+
+  public static Vector3 closestPointToBiCapsule(this Vector3 pos, Vector3 a, Vector3 b, float r1, float r2) {
+    float time;
+    return pos.closestPointToBiCapsule(a, b, r1, r2, out time);
   }
 
   //Ack late night function; horrible horrible code
