@@ -32,7 +32,7 @@ public class AutoDiffIK : MonoBehaviour {
 
     //Evaluate the Forward Kinematics and Draw the System
     Debug.DrawLine(mousePos, joint2.position);
-    float[] FKValues = ArmFK(theta, phi, 1).Values();
+    float[] FKValues = ArmFK(theta, phi, -1).Values();
     joint1.position = new Vector3(FKValues[0], FKValues[1]);
     joint2.position = new Vector3(FKValues[2], FKValues[3]);
   }

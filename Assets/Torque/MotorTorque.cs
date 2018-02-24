@@ -36,6 +36,20 @@ public static class TorqueExtension {
     body.AddForceAtPosition(-forceDirection* torque * 0.5f, worldPosition - forceOffset, ForceMode.Force);
   }
 
+  public static Matrix4x4 inverseWorldInertiaTensor(this Rigidbody body) {
+    Matrix4x4 tensorRotation = Matrix4x4.TRS(Vector3.zero, body.rotation * body.inertiaTensorRotation, Vector3.one);
+    Matrix4x4 worldInertiaTensor = (tensorRotation * Matrix4x4.Scale(body.inertiaTensor) * tensorRotation.inverse);
+    return worldInertiaTensor.inverse;
+  }
+
+  public static Matrix4x4 inverseInertiaTensor(this Rigidbody body) {
+    return Matrix4x4.TRS(Vector3.zero, body.inertiaTensorRotation, new Vector3(1f / body.inertiaTensor.x, 1f / body.inertiaTensor.y, 1f / body.inertiaTensor.z));
+  }
+
+  public static Matrix4x4 inertiaTensor(this Rigidbody body) {
+    return Matrix4x4.TRS(Vector3.zero, body.inertiaTensorRotation, body.inertiaTensor);
+  }
+
   public static Vector3 perpendicularVector(this Vector3 vector) {
     if (Mathf.Abs(vector.x) < 0.000001f  && Mathf.Abs(vector.y) < 0.000001f) {
       if (Equals(vector,Vector3.zero)) { return vector; }

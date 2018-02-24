@@ -14,7 +14,8 @@ public class MinimalBody : MonoBehaviour {
     transform.position += (transform.position - prevPosition) * (Time.deltaTime / prevDeltaTime) + (useGravity?(Physics.gravity * Time.deltaTime * Time.deltaTime):Vector3.zero);
     //Integrate Rotation
     float angle; Vector3 axis;
-    (transform.rotation * Quaternion.Inverse(prevRotation)).ToAngleAxis(out angle, out axis);
+    Quaternion deltaRotation = transform.rotation * Quaternion.Inverse(prevRotation);
+    deltaRotation.ToAngleAxis(out angle, out axis);
     transform.rotation = Quaternion.AngleAxis(angle * (Time.deltaTime / prevDeltaTime), axis) * transform.rotation;
 
     //Store State from Previous Frame
