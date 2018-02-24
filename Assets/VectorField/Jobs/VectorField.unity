@@ -142,6 +142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47b843e39102b774e8d80986a2112e61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  numParticles: 10230
   vectorField: {fileID: 244571158}
   sphereMesh: {fileID: 4300000, guid: 740866b444560094cbeee646e93bbe62, type: 2}
   sphereMaterial: {fileID: 2100000, guid: 89de6518b083a854f8cea0d922b7a725, type: 2}
