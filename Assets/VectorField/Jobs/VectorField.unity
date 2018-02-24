@@ -123,6 +123,7 @@ GameObject:
   - component: {fileID: 244571159}
   - component: {fileID: 244571158}
   - component: {fileID: 244571157}
+  - component: {fileID: 244571160}
   m_Layer: 0
   m_Name: VectorField
   m_TagString: Untagged
@@ -142,7 +143,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vectorField: {fileID: 244571158}
-  numParticles: 5000
+  sphereMesh: {fileID: 4300000, guid: 740866b444560094cbeee646e93bbe62, type: 2}
+  sphereMaterial: {fileID: 2100000, guid: 89de6518b083a854f8cea0d922b7a725, type: 2}
 --- !u!114 &244571158
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -169,6 +171,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &244571160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 244571156}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57b17f131070e0e45bd078378432c666, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  limitFrameRate: 1
 --- !u!1 &1618994651
 GameObject:
   m_ObjectHideFlags: 0
