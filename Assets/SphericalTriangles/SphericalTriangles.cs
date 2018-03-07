@@ -5,12 +5,15 @@ public class SphericalTriangles : MonoBehaviour {
   void OnDrawGizmos() {
     if (vertices.Length == 3) {
       Vector3[] triangleVertices = { vertices[0].position, vertices[1].position, vertices[2].position };
-      float interiorAngle = inefficientSolidAngleOfTriangle(transform.position, triangleVertices, true);
-      Debug.Log("Sum of Interior Angles: " + interiorAngle + ", Area of Spherical Triangle/Solid Angle: " + ((interiorAngle - 180f) * Mathf.Deg2Rad));
+      float interiorAngle = transform.position.SphericalTriangleInteriorAngleSum(triangleVertices, true);
+      Debug.Log("Sum of Interior Angles: " + transform.position.SphericalTriangleInteriorAngleSum(triangleVertices, true) + 
+        ", Area of Spherical Triangle/Solid Angle: " + transform.position.SolidAngleOfTriangle(triangleVertices));
     }
   }
+}
 
-  float inefficientSolidAngleOfTriangle(Vector3 point, Vector3[] vertices, bool drawGizmos = false) {
+public static class SphericalTriangleExtension {
+  public static float SphericalTriangleInteriorAngleSum(this Vector3 point, Vector3[] vertices, bool drawGizmos = false) {
     //Step 1: Project the Triangle Vertices onto a Unit Sphere around the point
     for (int i = 0; i < 3; i++) {
       vertices[i] = vertices[i].ConstrainDistance(point, 1f);
@@ -53,5 +56,8 @@ public class SphericalTriangles : MonoBehaviour {
     }
 
     return interiorAngle;
+  }
+  public static float SolidAngleOfTriangle(this Vector3 point, Vector3[] vertices, bool drawGizmos = false) {
+    return (point.SphericalTriangleInteriorAngleSum(vertices, drawGizmos) - 180f) * Mathf.Deg2Rad;
   }
 }
