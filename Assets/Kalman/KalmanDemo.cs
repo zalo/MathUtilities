@@ -23,14 +23,14 @@ public class KalmanDemo : MonoBehaviour {
          //you want the filter to solve for
          new double[,]
           {{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, //XPos
-			    {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, //YPos - Not Measured!
-			    {0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, //ZPos - Not Measured!
-			    {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0}, //XVel - Not Measured!
-			    {0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0}, //YVel - Not Measured!
-			    {0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0}, //ZVel - Not Measured!
+			  //{0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, //YPos - Not Measured!
+			  //{0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, //ZPos - Not Measured!
+			  //{0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0}, //XVel - Not Measured!
+			  //{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0}, //YVel - Not Measured!
+			  //{0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0}, //ZVel - Not Measured!
 			    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0}, //XAccel
-          {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0}, //YAccel - Not Measured!
-          {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0} //ZAccel - Not Measured!
+        //{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0}, //YAccel - Not Measured!
+        //{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0} //ZAccel - Not Measured!
           },
 
          //Process Noise; how much each value will deviate from the predicted value

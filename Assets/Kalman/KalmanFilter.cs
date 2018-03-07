@@ -39,11 +39,11 @@ public class KalmanFilter {
 
   public void UpdateState(double[,] newMeasurements) {
     //The Current Measurement
-    double[,] CurrentObservation = MeasurementMatrix.mult(newMeasurements).add(MeasurementNoiseMatrix);
+    double[,] CurrentObservation = MeasurementMatrix.mult(newMeasurements);//.add(MeasurementNoiseMatrix);
     //The difference (or "residual") between the predicted state and the measured state
     double[,] MeasurementResidualeMatrix = CurrentObservation.sub(MeasurementMatrix.mult(StateMatrix));
     //How fucked up that residual probably is
-    double[,] ResidualCovarianceMatrix = ((MeasurementMatrix.mult(ErrorCovarianceMatrix)).mult(MeasurementMatrix.transpose())).add(MeasurementNoiseMatrix);
+    double[,] ResidualCovarianceMatrix = ((MeasurementMatrix.mult(ErrorCovarianceMatrix)).mult(MeasurementMatrix.transpose()));//.add(MeasurementNoiseMatrix);
     //THE OPTIMAL KALMAN GAIN "choir of cherubs*
     double[,] OptimalKalmanGain = (ErrorCovarianceMatrix.mult(MeasurementMatrix.transpose())).mult(ResidualCovarianceMatrix.invert()); //oh shit need to invert a matrix
 
