@@ -31,7 +31,7 @@ namespace StarMathLib
         {
             var length = A.GetLength(0);
             if (length != A.GetLength(1))
-                throw new ArithmeticException("Matrix cannnot be inverted. Can only invert sqare matrices.");
+                throw new ArithmeticException("Matrix cannnot be inverted. Can only invert square matrices.");
             if (length == 1) return new[,] { { 1 / A[0, 0] } };
 
             int[] permutationVector;

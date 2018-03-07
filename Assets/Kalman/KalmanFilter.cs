@@ -1,4 +1,4 @@
-﻿using SimpleMatrices;
+﻿using StarMathLib;
 public class KalmanFilter {
   //The current state of the system as seen by the filter. x_k
   public double[,] StateMatrix;
@@ -21,7 +21,7 @@ public class KalmanFilter {
     MeasurementNoiseMatrix = MeasurementN;
 
     //Initial Error measurement; 0.0 = slow initial convergence, 1.0 = fast initial convergence
-    ErrorCovarianceMatrix = MatrixExtensions.makeIdentity(9).multiply(initialError);
+    ErrorCovarianceMatrix = /*MatrixExtensions*/StarMath.makeIdentity(9).multiply(initialError);
   }
 
   public void PredictState(double deltaTime) {
@@ -45,7 +45,7 @@ public class KalmanFilter {
     //How fucked up that residual probably is
     double[,] ResidualCovarianceMatrix = ((MeasurementMatrix.multiply(ErrorCovarianceMatrix)).multiply(MeasurementMatrix.transpose()));//.add(MeasurementNoiseMatrix);
     //THE OPTIMAL KALMAN GAIN "choir of cherubs*
-    double[,] OptimalKalmanGain = (ErrorCovarianceMatrix.multiply(MeasurementMatrix.transpose())).multiply(ResidualCovarianceMatrix.inverse()); //oh shit need to invert a matrix
+    double[,] OptimalKalmanGain = (ErrorCovarianceMatrix.multiply(MeasurementMatrix.transpose())).multiply(SimpleMatrices.MatrixExtensions.inverse(ResidualCovarianceMatrix)); //oh shit broken inversion makes it work??
 
     //wait... all it's doing here is adding the measurement residual multiplied by the gain to the state
     //WHAT A FUCKIN GYP, ALL THIS TROUBLE, ALL THESE MATRICES... GAH.
@@ -54,7 +54,7 @@ public class KalmanFilter {
 
     //Update the fucked-upitude of the state
     double[,] GainTimesMeasurement = OptimalKalmanGain.multiply(MeasurementMatrix);
-    ErrorCovarianceMatrix = MatrixExtensions.makeIdentity(GainTimesMeasurement.GetLength(1)).subtract(GainTimesMeasurement).multiply(ErrorCovarianceMatrix);
+    ErrorCovarianceMatrix = /*MatrixExtensions*/StarMath.makeIdentity(GainTimesMeasurement.GetLength(1)).subtract(GainTimesMeasurement).multiply(ErrorCovarianceMatrix);
   }
 
   public double[,] MakeStateTransitionMatrix(double deltaTime) {
