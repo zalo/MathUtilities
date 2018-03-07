@@ -21,40 +21,40 @@ public class KalmanFilter {
     MeasurementNoiseMatrix = MeasurementN;
 
     //Initial Error measurement; 0.0 = slow initial convergence, 1.0 = fast initial convergence
-    ErrorCovarianceMatrix = MatrixExtensions.identity(9).mult(initialError);
+    ErrorCovarianceMatrix = MatrixExtensions.makeIdentity(9).multiply(initialError);
   }
 
   public void PredictState(double deltaTime) {
     StateTransitionMatrix = MakeStateTransitionMatrix(deltaTime);
     //Predict the State according to the Kinematic Equations in the StateTransition Matrix
-    StateMatrix = StateTransitionMatrix.mult(StateMatrix);
+    StateMatrix = StateTransitionMatrix.multiply(StateMatrix);
     //Predict the Error according to the Kinematic Equations and the Process Noise
-    ErrorCovarianceMatrix = (StateTransitionMatrix.mult(ErrorCovarianceMatrix).mult(StateTransitionMatrix.transpose())).add(ProcessNoiseMatrix);
+    ErrorCovarianceMatrix = (StateTransitionMatrix.multiply(ErrorCovarianceMatrix).multiply(StateTransitionMatrix.transpose())).add(ProcessNoiseMatrix);
   }
 
   //Predict the State according to the Kinematic Equations in the StateTransition Matrix without changing the state of the filter!
   public double[,] SafePredictState(double deltaTime) {
-    return MakeStateTransitionMatrix(deltaTime).mult(StateMatrix);
+    return MakeStateTransitionMatrix(deltaTime).multiply(StateMatrix);
   }
 
   public void UpdateState(double[,] newMeasurements) {
     //The Current Measurement
-    double[,] CurrentObservation = MeasurementMatrix.mult(newMeasurements);//.add(MeasurementNoiseMatrix);
+    double[,] CurrentObservation = MeasurementMatrix.multiply(newMeasurements);//.add(MeasurementNoiseMatrix);
     //The difference (or "residual") between the predicted state and the measured state
-    double[,] MeasurementResidualeMatrix = CurrentObservation.sub(MeasurementMatrix.mult(StateMatrix));
+    double[,] MeasurementResidualeMatrix = CurrentObservation.subtract(MeasurementMatrix.multiply(StateMatrix));
     //How fucked up that residual probably is
-    double[,] ResidualCovarianceMatrix = ((MeasurementMatrix.mult(ErrorCovarianceMatrix)).mult(MeasurementMatrix.transpose()));//.add(MeasurementNoiseMatrix);
+    double[,] ResidualCovarianceMatrix = ((MeasurementMatrix.multiply(ErrorCovarianceMatrix)).multiply(MeasurementMatrix.transpose()));//.add(MeasurementNoiseMatrix);
     //THE OPTIMAL KALMAN GAIN "choir of cherubs*
-    double[,] OptimalKalmanGain = (ErrorCovarianceMatrix.mult(MeasurementMatrix.transpose())).mult(ResidualCovarianceMatrix.invert()); //oh shit need to invert a matrix
+    double[,] OptimalKalmanGain = (ErrorCovarianceMatrix.multiply(MeasurementMatrix.transpose())).multiply(ResidualCovarianceMatrix.inverse()); //oh shit need to invert a matrix
 
     //wait... all it's doing here is adding the measurement residual multiplied by the gain to the state
     //WHAT A FUCKIN GYP, ALL THIS TROUBLE, ALL THESE MATRICES... GAH.
     //Should have just used some for-loops
-    StateMatrix = StateMatrix.add(OptimalKalmanGain.mult(MeasurementResidualeMatrix));
+    StateMatrix = StateMatrix.add(OptimalKalmanGain.multiply(MeasurementResidualeMatrix));
 
     //Update the fucked-upitude of the state
-    double[,] GainTimesMeasurement = OptimalKalmanGain.mult(MeasurementMatrix);
-    ErrorCovarianceMatrix = MatrixExtensions.identity(GainTimesMeasurement.GetLength(1)).sub(GainTimesMeasurement).mult(ErrorCovarianceMatrix);
+    double[,] GainTimesMeasurement = OptimalKalmanGain.multiply(MeasurementMatrix);
+    ErrorCovarianceMatrix = MatrixExtensions.makeIdentity(GainTimesMeasurement.GetLength(1)).subtract(GainTimesMeasurement).multiply(ErrorCovarianceMatrix);
   }
 
   public double[,] MakeStateTransitionMatrix(double deltaTime) {

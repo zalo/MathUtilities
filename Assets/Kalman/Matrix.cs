@@ -6,7 +6,7 @@ namespace SimpleMatrices {
   public static class MatrixExtensions {
 
     //Makes an identity matrix with these dimensions
-    public static double[,] identity(int inwidth, int inheight) {
+    public static double[,] makeIdentity(int inwidth, int inheight) {
       double[,] toReturn = new double[inheight, inwidth];
 
       //Set the diagonals to 1
@@ -17,12 +17,12 @@ namespace SimpleMatrices {
       return toReturn;
     }
 
-    public static double[,] identity(int indimension) {
-      return identity(indimension, indimension);
+    public static double[,] makeIdentity(int indimension) {
+      return makeIdentity(indimension, indimension);
     }
 
     //Multiplies this Matrix by another Matrix
-    public static double[,] mult(this double[,] thisMatrix, double[,] inMatrix) {
+    public static double[,] multiply(this double[,] thisMatrix, double[,] inMatrix) {
       if (thisMatrix.GetLength(1) == inMatrix.GetLength(0)) {
         double[,] toReturn = new double[thisMatrix.GetLength(0), inMatrix.GetLength(1)];
         for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
@@ -59,7 +59,7 @@ namespace SimpleMatrices {
     }
 
     //Multiplies this Matrix by a Scalar
-    public static double[,] mult(this double[,] thisMatrix, double inScalar) {
+    public static double[,] multiply(this double[,] thisMatrix, double inScalar) {
       double[,] toReturn = new double[thisMatrix.GetLength(0), thisMatrix.GetLength(1)];
       for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
         for (int j = 0; j < thisMatrix.GetLength(1); j++) { //j is the column in the this matrix
@@ -99,7 +99,7 @@ namespace SimpleMatrices {
     }
 
     //Performs a component-wise subtraction between two matrices
-    public static double[,] sub(this double[,] thisMatrix, double[,] inMatrix) {
+    public static double[,] subtract(this double[,] thisMatrix, double[,] inMatrix) {
       if (thisMatrix.GetLength(0) == inMatrix.GetLength(0) && thisMatrix.GetLength(1) == inMatrix.GetLength(1)) {
         double[,] toReturn = new double[thisMatrix.GetLength(0), thisMatrix.GetLength(1)];
         for (int i = 0; i < thisMatrix.GetLength(0); i++) { //i is the row in this matrix
@@ -186,9 +186,9 @@ namespace SimpleMatrices {
     }
 
     //Inverts this Matrix using Gauss-Jordan Elimination
-    public static double[,] invert(this double[,] thisMatrix) {
+    public static double[,] inverse(this double[,] thisMatrix) {
       //Add an Identity Matrix on to the side of this Matrix
-      double[,] Inversion = thisMatrix.concatenate(identity(thisMatrix.GetLength(0), thisMatrix.GetLength(1)));
+      double[,] Inversion = thisMatrix.concatenate(makeIdentity(thisMatrix.GetLength(0), thisMatrix.GetLength(1)));
 
       //Begin Converting left Matrix to Row-Echelon form
       int i = 0;
