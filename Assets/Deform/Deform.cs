@@ -12,9 +12,11 @@ public class Deform : MonoBehaviour {
   Vector3[] originalPlaneVerts;
   Vector3[] distortedPlaneVerts;
 
+  //This controls the quality of the control point rotation solve
+  int iters = 50;
   Vector3[,] restingIntraControlPointDisplacements;
-  float[,] controlPointWeights;
   Quaternion[] controlPointRotations;
+  float[,] controlPointWeights;
 
   // Use this for initialization
   void Start() {
@@ -37,13 +39,35 @@ public class Deform : MonoBehaviour {
       }
     }
 
-    //Calculate the influence of each control point on each vertex
+    controlPointRotations = new Quaternion[controlPoints.Length];
+  }
+
+  // Update is called once per frame
+  void Update() {
+    calculateVertexWeights(weight);
+
+    Vector3[] currentControlPoints = new Vector3[controlPoints.Length];
+    for (int j = 0; j < controlPoints.Length; j++) {
+      currentControlPoints[j] = transform.InverseTransformPoint(controlPoints[j].position);
+    }
+
+    calculateControlPointRotations(currentControlPoints, useRotation);
+
+    calculateVertexDisplacement(currentControlPoints);
+
+    distortedPlane.vertices = distortedPlaneVerts;
+    distortedPlane.UploadMeshData(false);
+    filter.mesh = distortedPlane;
+  }
+
+  //Calculate the influence of each control point on each vertex
+  void calculateVertexWeights(float weightFalloff) {
     controlPointWeights = new float[originalPlaneVerts.Length, controlPoints.Length];
     for (int i = 0; i < originalPlaneVerts.Length; i++) {
       float totalWeight = 0f;
       float[] tempControlPointWeights = new float[controlPoints.Length];
       for (int j = 0; j < controlPoints.Length; j++) {
-        tempControlPointWeights[j] = 1f / Mathf.Pow(Vector3.Distance(originalPlaneVerts[i], originalControlPoints[j]), weight);
+        tempControlPointWeights[j] = 1f / Mathf.Pow(Vector3.Distance(originalPlaneVerts[i], originalControlPoints[j]), weightFalloff);
         totalWeight += tempControlPointWeights[j];
       }
 
@@ -53,36 +77,61 @@ public class Deform : MonoBehaviour {
         controlPointWeights[i, j] = tempControlPointWeights[j];
       }
     }
-
-    controlPointRotations = new Quaternion[controlPoints.Length];
   }
 
-  // Update is called once per frame
-  void Update() {
-    Vector3[] currentControlPoints = new Vector3[controlPoints.Length];
+  //Calculate the rotation of each control point... (this is the equivalent of a polar decomposition)
+  void calculateControlPointRotations(Vector3[] currentControlPoints, bool useRotation = true) {
     for (int j = 0; j < controlPoints.Length; j++) {
-      currentControlPoints[j] = transform.InverseTransformPoint(controlPoints[j].position);
+      controlPointRotations[j] = Quaternion.identity;
+      Vector3 averageRotation = Vector3.zero;
+      if (useRotation) {
+        for (int iteration = 0; iteration < iters; iteration++) {
+          Vector3 omegaNumerator = Vector3.zero; float omegaDenominator = 0f;
+          for (int k = 0; k < controlPoints.Length; k++) {
+            if (j != k && controlPoints[k].gameObject.activeSelf) {
+              Vector3 rotatedDirection = (controlPointRotations[j] * restingIntraControlPointDisplacements[j, k]).normalized;
+              Vector3 currentDirection = (currentControlPoints[k] - currentControlPoints[j]).normalized;
+              omegaNumerator += Vector3.Cross(rotatedDirection, currentDirection);
+              omegaDenominator += Vector3.Dot(rotatedDirection, currentDirection);
+            }
+          }
+          Vector3 omega = omegaNumerator / Mathf.Abs(omegaDenominator + 0.000000001f);
+          float w = omega.magnitude;
+          if (w < 0.000000001f)
+            break;
+          controlPointRotations[j] = Quaternion.AngleAxis(w * Mathf.Rad2Deg, omega / w) * controlPointRotations[j];
+          controlPointRotations[j] = Quaternion.Lerp(controlPointRotations[j], controlPointRotations[j], 0f);
+        }
+      }
     }
+  }
 
-    //Calculate the rotation of each control point...
+  /*//This version converges too slowly and breaks
+  void calculateControlPointRotations(Vector3[] currentControlPoints, bool useRotation = true) {
     for (int j = 0; j < controlPoints.Length; j++) {
+      controlPointRotations[j] = Quaternion.identity;
       Vector3 averageRotation = Vector3.zero; int activePoints = 0;
       if (useRotation) {
-        for (int k = 0; k < controlPoints.Length; k++) {
-          if (j != k && controlPoints[k].gameObject.activeSelf) {
-            Quaternion rot = Quaternion.FromToRotation(restingIntraControlPointDisplacements[j, k],
-                                                       currentControlPoints[k] - currentControlPoints[j]);
-            Vector3 axis; float angle;
-            rot.ToAngleAxis(out angle, out axis);
-            averageRotation += axis.normalized * angle;
-            activePoints++;
+        for (int iteration = 0; iteration < iters; iteration++) {
+          for (int k = 0; k < controlPoints.Length; k++) {
+            if (j != k && controlPoints[k].gameObject.activeSelf) {
+              Quaternion rot = Quaternion.FromToRotation(controlPointRotations[j] * restingIntraControlPointDisplacements[j, k],
+                                                         currentControlPoints[k] - currentControlPoints[j]);
+              Vector3 axis; float angle;
+              rot.ToAngleAxis(out angle, out axis);
+              averageRotation += axis.normalized * angle;
+              activePoints++;
+            }
           }
+          averageRotation /= activePoints;
+          controlPointRotations[j] = Quaternion.AngleAxis(averageRotation.magnitude*2f, averageRotation.normalized) * controlPointRotations[j];
+          controlPointRotations[j] = Quaternion.Lerp(controlPointRotations[j], controlPointRotations[j], 0f);
         }
-        averageRotation /= activePoints;
       }
-      controlPointRotations[j] = Quaternion.AngleAxis(averageRotation.magnitude, averageRotation.normalized);
     }
+  }*/
 
+  void calculateVertexDisplacement(Vector3[] currentControlPoints) {
     //Apply the weighted offsets to each vertex
     for (int i = 0; i < originalPlaneVerts.Length; i++) {
       Vector3 vertexDisplacement = Vector3.zero;
@@ -97,9 +146,5 @@ public class Deform : MonoBehaviour {
 
       distortedPlaneVerts[i] = originalPlaneVerts[i] + vertexDisplacement;
     }
-
-    distortedPlane.vertices = distortedPlaneVerts;
-    distortedPlane.UploadMeshData(false);
-    filter.mesh = distortedPlane;
   }
 }
