@@ -106,31 +106,6 @@ public class Deform : MonoBehaviour {
     }
   }
 
-  /*//This version converges too slowly and breaks
-  void calculateControlPointRotations(Vector3[] currentControlPoints, bool useRotation = true) {
-    for (int j = 0; j < controlPoints.Length; j++) {
-      controlPointRotations[j] = Quaternion.identity;
-      Vector3 averageRotation = Vector3.zero; int activePoints = 0;
-      if (useRotation) {
-        for (int iteration = 0; iteration < iters; iteration++) {
-          for (int k = 0; k < controlPoints.Length; k++) {
-            if (j != k && controlPoints[k].gameObject.activeSelf) {
-              Quaternion rot = Quaternion.FromToRotation(controlPointRotations[j] * restingIntraControlPointDisplacements[j, k],
-                                                         currentControlPoints[k] - currentControlPoints[j]);
-              Vector3 axis; float angle;
-              rot.ToAngleAxis(out angle, out axis);
-              averageRotation += axis.normalized * angle;
-              activePoints++;
-            }
-          }
-          averageRotation /= activePoints;
-          controlPointRotations[j] = Quaternion.AngleAxis(averageRotation.magnitude*2f, averageRotation.normalized) * controlPointRotations[j];
-          controlPointRotations[j] = Quaternion.Lerp(controlPointRotations[j], controlPointRotations[j], 0f);
-        }
-      }
-    }
-  }*/
-
   void calculateVertexDisplacement(Vector3[] currentControlPoints) {
     //Apply the weighted offsets to each vertex
     for (int i = 0; i < originalPlaneVerts.Length; i++) {
