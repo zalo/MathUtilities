@@ -1,15 +1,19 @@
 ﻿using UnityEngine;
 public class MeshDeformer {
-  Vector3[] originalMeshVertices;
-  Vector3[] distortedMeshVertices;
+  protected Vector3[] originalMeshVertices;
+  protected Vector3[] distortedMeshVertices;
 
-  Vector3[] originalControlPoints;
-  Vector3[] currentControlPoints;
-  Vector3[,] restingIntraControlPointDisplacements;
-  Quaternion[] controlPointRotations;
-  float[,] vertexControlWeights;
+  protected Vector3[] originalControlPoints;
+  protected Vector3[] currentControlPoints;
+  protected Vector3[,] restingIntraControlPointDisplacements;
+  protected Quaternion[] controlPointRotations;
+  protected float[,] vertexControlWeights;
 
   public MeshDeformer(MeshFilter inputMeshFilter, Vector3[] controlPoints, float weight = 1f) {
+    InitializeMesh(inputMeshFilter, controlPoints, weight);
+  }
+
+  protected virtual void InitializeMesh(MeshFilter inputMeshFilter, Vector3[] controlPoints, float weight = 1f) {
     //Record the undeformed control point positions
     originalControlPoints = new Vector3[controlPoints.Length];
     currentControlPoints = new Vector3[controlPoints.Length];
@@ -41,14 +45,14 @@ public class MeshDeformer {
 
   //Updates the weighting of the control points on each vertex
   public void updateWeights(float weight) {
-    calculateVertexWeights(originalMeshVertices, originalControlPoints, weight, ref vertexControlWeights);
+    calculateVertexWeights(originalMeshVertices, originalControlPoints, weight, ref vertexControlWeights, true);
   }
 
   //STATIC UTILITY METHODS BELOW
 
   //Precalculates the vertex weighting and control point relationships
-  static void initializeMeshDeformation(Mesh inputMesh, Vector3[] originalControlPoints, ref Vector3[] originalMeshVertices,
-                                        ref Vector3[,] restingIntraControlPointDisplacements, ref float[,] vertexControlWeights, float weight = 1f) {
+  protected void initializeMeshDeformation(Mesh inputMesh, Vector3[] originalControlPoints, ref Vector3[] originalMeshVertices,
+                                           ref Vector3[,] restingIntraControlPointDisplacements, ref float[,] vertexControlWeights, float weight = 1f) {
     originalMeshVertices = inputMesh.vertices;
     //Record the relationships of the control points to each other
     restingIntraControlPointDisplacements = new Vector3[originalControlPoints.Length, originalControlPoints.Length];
@@ -61,7 +65,7 @@ public class MeshDeformer {
   }
 
   //Updates the Deformation of a Mesh
-  static void updateMeshDeformation(Vector3[] originalControlPoints, ref Vector3[] originalMeshVertices, ref Vector3[] currentControlPoints,
+  protected static void updateMeshDeformation(Vector3[] originalControlPoints, ref Vector3[] originalMeshVertices, ref Vector3[] currentControlPoints,
                                     ref Quaternion[] controlPointRotations, ref Vector3[,] restingIntraControlPointDisplacements,
                                     ref float[,] vertexControlWeights, ref Vector3[] distortedMeshVertices, bool useRotation = true, float weight = 1f, int iters = 50) {
     calculateControlPointRotations(currentControlPoints, originalControlPoints,
@@ -72,7 +76,7 @@ public class MeshDeformer {
   }
 
   //Calculate the influence of each control point on each vertex
-  static void calculateVertexWeights(Vector3[] originalPlaneVerts, Vector3[] originalControlPoints, float weightFalloff, ref float[,] vertexControlWeights) {
+  protected virtual void calculateVertexWeights(Vector3[] originalPlaneVerts, Vector3[] originalControlPoints, float weightFalloff, ref float[,] vertexControlWeights, bool justWeightFalloff = false) {
     if (vertexControlWeights == null || vertexControlWeights.GetLength(0) != originalPlaneVerts.Length ||
                                         vertexControlWeights.GetLength(1) != originalControlPoints.Length) {
       vertexControlWeights = new float[originalPlaneVerts.Length, originalControlPoints.Length];
@@ -95,7 +99,7 @@ public class MeshDeformer {
   }
 
   //Calculate the rotation of each control point (this is a polar decomposition)...
-  static void calculateControlPointRotations(Vector3[] currentControlPoints, Vector3[] originalControlPoints, Vector3[,] restingIntraControlPointDisplacements,
+  protected static void calculateControlPointRotations(Vector3[] currentControlPoints, Vector3[] originalControlPoints, Vector3[,] restingIntraControlPointDisplacements,
                                              ref Quaternion[] controlPointRotations, bool useRotation = true, int iters = 50) {
     if (controlPointRotations == null || controlPointRotations.Length != originalControlPoints.Length) { controlPointRotations = new Quaternion[originalControlPoints.Length]; }
     for (int j = 0; j < currentControlPoints.Length; j++) {
@@ -124,7 +128,7 @@ public class MeshDeformer {
   }
 
   //Apply the weighted offsets to each vertex
-  static void calculateVertexDisplacement(Vector3[] originalPlaneVerts, Vector3[] originalControlPoints, Vector3[] currentControlPoints,
+  protected static void calculateVertexDisplacement(Vector3[] originalPlaneVerts, Vector3[] originalControlPoints, Vector3[] currentControlPoints,
                                           Quaternion[] controlPointRotations, float[,] controlPointWeights, ref Vector3[] distortedPlaneVerts) {
     if (distortedPlaneVerts == null || distortedPlaneVerts.Length != originalPlaneVerts.Length) { distortedPlaneVerts = new Vector3[originalPlaneVerts.Length]; }
     for (int i = 0; i < originalPlaneVerts.Length; i++) {
