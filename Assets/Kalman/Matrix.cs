@@ -186,6 +186,7 @@ namespace SimpleMatrices {
     }
 
     //Inverts this Matrix using Gauss-Jordan Elimination
+    //THIS FUNCTION IS BROKEN
     public static double[,] inverse(this double[,] thisMatrix) {
       //Add an Identity Matrix on to the side of this Matrix
       double[,] Inversion = thisMatrix.concatenate(makeIdentity(thisMatrix.GetLength(0), thisMatrix.GetLength(1)));
