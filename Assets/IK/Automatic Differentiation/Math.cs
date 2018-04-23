@@ -75,6 +75,24 @@ namespace AutoDiff {
       return value => fn(DualNumber.Variable(value));
     }
 
+    public static DualVector3 Cross(this DualVector3 first, DualVector3 second) {
+      return new DualVector3((first.y * second.z) - (first.z * second.y),
+                             (first.z * second.x) - (first.x * second.z),
+                             (first.x * second.y) - (first.y * second.x));
+    }
+
+    public static DualNumber Dot(this DualVector3 first, DualVector3 second) {
+      return ((first.x * second.x) + (first.y * second.y) + (first.z * second.z));
+    }
+
+    public static DualNumber SqrMagnitude(this DualVector3 vector) {
+      return vector.x.Squared() + vector.y.Squared() + vector.z.Squared();
+    }
+
+    public static DualNumber Magnitude(this DualVector3 vector) {
+      return Pow(SqrMagnitude(vector), 0.5f);
+    }
+
     #endregion
 
     #region Helpers

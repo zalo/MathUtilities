@@ -9,21 +9,18 @@ public class AutoDiffIK : MonoBehaviour {
   [Range(0f, 6.28f)]
   public float phi = 0f;
 
+  DualVector3 baseJoint, endJoint;
+
   void Update() {
     Vector2 mousePos = Camera.main.ScreenPointToRay(Input.mousePosition).origin;
     Vector2 clampedPos = mousePos.normalized * Mathf.Clamp(mousePos.magnitude, 0f, 2f);
-    Vector2 error = clampedPos - (Vector2)joint2.position;
-
-    float[] derivativeTheta = ArmFK(theta, phi, 0).Derivatives();
-    float[] derivativePhi = ArmFK(theta, phi, 1).Derivatives();
 
     if (useIK) {
-      theta +=
-        ((error.x * derivativeTheta[2]) +
-         (error.y * derivativeTheta[3])) * 0.25f;
-      phi +=
-        ((error.x * derivativePhi[2]) +
-         (error.y * derivativePhi[3])) * 0.25f;
+      //Calculate derivative of the error wrt theta
+      theta -= ArmFKError(theta, phi, clampedPos, 0).Derivative * 0.25f;
+
+      //Calculate derivative of the error wrt phi
+      phi -= ArmFKError(theta, phi, clampedPos, 1).Derivative * 0.25f;
 
       //Loop the range of the angles for the inspector
       while (theta < 0f || theta > 6.28f) { theta -= Mathf.Sign(theta) * 6.28f; }
@@ -32,24 +29,18 @@ public class AutoDiffIK : MonoBehaviour {
 
     //Evaluate the Forward Kinematics and Draw the System
     Debug.DrawLine(mousePos, joint2.position);
-    float[] FKValues = ArmFK(theta, phi, -1).Values();
-    joint1.position = new Vector3(FKValues[0], FKValues[1]);
-    joint2.position = new Vector3(FKValues[2], FKValues[3]);
+    joint1.position = baseJoint; joint2.position = endJoint;
   }
 
   /// <summary>
   /// Calculates value and derivative of the position of the arm with respect to whichDeriv
   /// </summary>
-  static DualNumber[] ArmFK(float theta, float phi, int whichDeriv) {
+  DualNumber ArmFKError(float theta, float phi, Vector3 clampedPos, int whichDeriv) {
     DualNumber thetaVar = whichDeriv == 0 ? DualNumber.Variable(theta) : DualNumber.Constant(theta);
     DualNumber phiVar = whichDeriv == 1 ? DualNumber.Variable(phi) : DualNumber.Constant(phi);
 
-    DualNumber[] outputValues = {
-      Math.Sin(thetaVar), //X Position of First Joint
-      Math.Cos(thetaVar), //Y Position of First Joint
-      Math.Sin(thetaVar) + Math.Sin(thetaVar + phiVar), //X Position of Second Joint
-      Math.Cos(thetaVar) + Math.Cos(thetaVar + phiVar), //Y Position of Second Joint
-     };
-    return outputValues;
+    baseJoint = new DualVector3(Math.Sin(thetaVar), Math.Cos(thetaVar), new DualNumber());
+    endJoint = baseJoint + new DualVector3(Math.Sin(thetaVar + phiVar), Math.Cos(thetaVar + phiVar), new DualNumber());
+    return (((DualVector3)clampedPos - endJoint).SqrMagnitude());
   }
 }

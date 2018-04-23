@@ -70,6 +70,11 @@ namespace AutoDiff
             return Constant(value);
         }
 
+        public static implicit operator float(DualNumber value) 
+        {
+            return value.Value;
+        }
+
         public static DualNumber operator+ (DualNumber first, DualNumber second)
         {
             // d(a + b) == d(a) + d(b)
