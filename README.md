@@ -3,6 +3,13 @@ MathUtilities
 
 A grab bag of some of the neat math and physics tricks that I've amassed over the last few years, implemented in Unity's C#.  You're free to use the code here however you like.
 
+## [Generalized Mesh Deformation](https://github.com/zalo/MathUtilities/tree/master/Assets/Deform)
+<img src="https://i.imgur.com/8qb8s5t.gif">
+
+An extremely fast, general mesh-deformation algorithm with arbitrary point-placement and configurable rigidity.  Has the desirable property that it acts like a rigid Kabsch when the "weight" (ductility) is set to 0, but smoothly blends in deformation as the weight is increased.
+
+The implementation is similar to Linear Blend Skinning, but the skinning weights are automatically calculated with [Inverse Distance Weighting](https://en.wikipedia.org/wiki/Inverse_distance_weighting) (in cartesian _or_ surface space), and the "bone rotations" are calculated to optimally preserve the angular relationships between the control points.
+
 ## [Signed Distance Field Texture Rendering](https://github.com/zalo/MathUtilities/tree/master/Assets/Volume)
 <img src="https://i.imgur.com/k7J0I7k.gif">
 
