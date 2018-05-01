@@ -137,9 +137,9 @@ TextMesh:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 286257951}
-  m_Text: "Start \"NeuralIK.py\", hit Play, \nand use your mouse\n\nCreates a real-time
-    training + visualization loop\nbetween the Keras/Tensorflow application\n and
-    the Unity application while it trains a\nNeural Network to do Inverse Kinematics"
+  m_Text: "Hit Play, start \"NeuralIK.py\"\nUse your Mouse (Move+Click)\n\nCreates
+    a real-time training + visualization loop\nbetween the Keras/Tensorflow application\n
+    and the Unity application while it trains a\nNeural Network to do Inverse Kinematics"
   m_OffsetZ: 0
   m_CharacterSize: 0.14
   m_LineSpacing: 1

@@ -8,7 +8,7 @@ public class NeuralIK : ZeroMQBehaviour {
     if (message.StartsWith("s ")) {
       string[] trainingInputs = message.Substring(2).Split(';');
       StringBuilder trainingSamples = new StringBuilder(trainingInputs.Length + 1);
-      for (int i = 0; i < (addTrainingData?trainingInputs.Length:16); i++) {
+      for (int i = 0; i < (addTrainingData ? trainingInputs.Length : 0); i++) {
         string[] inputString = trainingInputs[i].Split(',');
         Vector3 input = new Vector3(float.Parse(inputString[0]), float.Parse(inputString[1]), 0f);
         float baseRot, elbowRot;
@@ -47,6 +47,8 @@ public class NeuralIK : ZeroMQBehaviour {
       baseRot += Mathf.Atan2(tipPosition.normalized.y, tipPosition.normalized.x) - Mathf.Atan2(input.normalized.y, input.normalized.x);
       elbowPosition = new Vector3(Mathf.Sin(baseRot), Mathf.Cos(baseRot), 0f);
       tipPosition = new Vector3(Mathf.Sin(baseRot + elbowRot), Mathf.Cos(baseRot + elbowRot), 0f) + elbowPosition;
+
+      baseRot = Mathf.Repeat(baseRot, 3.14159f * 2f); elbowRot = Mathf.Repeat(elbowRot, 3.14159f * 2f);
     }
     if (draw) {
       Debug.DrawLine(Vector3.zero, elbowPosition);
@@ -60,5 +62,9 @@ public class NeuralIK : ZeroMQBehaviour {
     //Draw the "Ground Truth" IK Arm
     float baseRot, elbowRot;
     solveIK(GetComponent<Camera>().ScreenToWorldPoint(Input.mousePosition), out baseRot, out elbowRot, true);
+
+    if (Input.GetMouseButtonDown(0)) {
+      addTrainingData = !addTrainingData;
+    }
   }
 }
