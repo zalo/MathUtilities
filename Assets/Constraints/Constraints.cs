@@ -33,6 +33,23 @@ public static class Constraints {
     return Vector3.Lerp(a, b, Vector3.Dot(position - a, ba) / ba.sqrMagnitude);
   }
 
+  public static float ClosestTimeOnSegmentToLine(Vector3 segA, Vector3 segB, Vector3 lineA, Vector3 lineB) {
+    Vector3 lineBA = lineB - lineA; float lineDirSqrMag = Vector3.Dot(lineBA, lineBA);
+    Vector3 inPlaneA = segA - ((Vector3.Dot(segA - lineA, lineBA) / lineDirSqrMag) * lineBA),
+            inPlaneB = segB - ((Vector3.Dot(segB - lineA, lineBA) / lineDirSqrMag) * lineBA);
+    Vector3 inPlaneBA = inPlaneB - inPlaneA;
+    return (inPlaneA != inPlaneB) ? Vector3.Dot(lineA - inPlaneA, inPlaneBA) / Vector3.Dot(inPlaneBA, inPlaneBA) : 0f;
+  }
+
+  public static Vector3 ClosestPointOnSegmentToLine(Vector3 segA, Vector3 segB, Vector3 lineA, Vector3 lineB) {
+    return Vector3.Lerp(segA, segB, ClosestTimeOnSegmentToLine(segA, segB, lineA, lineB));
+  }
+
+  public static void ClosestPointSegmentToSegment(Vector3 a, Vector3 b, Vector3 c, Vector3 d, out Vector3 point1, out Vector3 point2) {
+    Vector3 rayPoint = ClosestPointOnSegmentToLine(a, b, c, d);
+    point2 = rayPoint.ConstrainToSegment(c, d); point1 = point2.ConstrainToSegment(a, b);
+  }
+
   public static Vector3 ConstrainToCapsule(this Vector3 position, Vector3 a, Vector3 b, float radius, bool toSurface = false) {
     Vector3 onSegment = ConstrainToSegment(position, a, b);
     Vector3 displacement = position - onSegment;
@@ -158,7 +175,7 @@ public static class Constraints {
 
   //Credit to Sam Hocevar of LolEngine
   //lolengine.net/blog/2013/09/21/picking-orthogonal-vector-combing-coconuts
-  public static Vector3 perpendicular(this Vector3 vec) {
+  public static Vector3 Perpendicular(this Vector3 vec) {
       return Mathf.Abs(vec.x) > Mathf.Abs(vec.z) ? new Vector3(-vec.y, vec.x, 0f)
                                                  : new Vector3(0f, -vec.z, vec.y);
   }

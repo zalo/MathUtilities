@@ -3,7 +3,7 @@
 public class CCDIKJoint : MonoBehaviour {
   public Vector3 axis = Vector3.right;
   public float maxAngle = 180;
-  Vector3 perpendicular; void Start() { perpendicular = axis.perpendicular(); }
+  Vector3 perpendicular; void Start() { perpendicular = axis.Perpendicular(); }
 
   public void Evaluate(Transform ToolTip, Transform Target, bool rotateToDirection = false) {
     //Rotate the assembly so the tooltip better matches the target position/direction
