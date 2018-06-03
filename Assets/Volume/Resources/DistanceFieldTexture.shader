@@ -64,8 +64,9 @@
 					startingPos = camPos;
 					alpha += 0.2; //This is like the near clipping plane
 				}
-
-				for(int i=0; i<20; i++) {
+				
+				int it = 0;
+				for(it=0; it<50; it++) {
 				  float3 pos = startingPos - (viewDirection*alpha);
 				  if(abs(pos.x)>0.501 || abs(pos.y)>0.501 || abs(pos.z)>0.501){
 						break;
@@ -86,7 +87,7 @@
 				  alpha += dist;
 				}
 
-				col = colorSum;
+				col = float4(0.02,0,0,1)*it;//colorSum;
 			}
 			ENDCG
 		}

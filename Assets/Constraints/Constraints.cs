@@ -33,6 +33,10 @@ public static class Constraints {
     return Vector3.Lerp(a, b, Vector3.Dot(position - a, ba) / ba.sqrMagnitude);
   }
 
+  public static Vector3 ConstrainToPlane(this Vector3 position, Vector3 planePoint, Vector3 planeNormal) {
+    return position - ((Vector3.Dot(position - planePoint, planeNormal) / Vector3.Dot(planeNormal, planeNormal)) * planeNormal);
+  }
+
   public static float ClosestTimeOnSegmentToLine(Vector3 segA, Vector3 segB, Vector3 lineA, Vector3 lineB) {
     Vector3 lineBA = lineB - lineA; float lineDirSqrMag = Vector3.Dot(lineBA, lineBA);
     Vector3 inPlaneA = segA - ((Vector3.Dot(segA - lineA, lineBA) / lineDirSqrMag) * lineBA),
