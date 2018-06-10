@@ -8,6 +8,7 @@ public class TextureProjector : MonoBehaviour {
     Shader.SetGlobalMatrix("_projectorMatrix", projectorCam.projectionMatrix * projectorCam.worldToCameraMatrix);
   }
   private void OnValidate() { Start(); }
+  private void OnDrawGizmosSelected() { LateUpdate(); }
   void LateUpdate() {
     Shader.SetGlobalMatrix("_projectorMatrix", projectorCam.projectionMatrix * projectorCam.worldToCameraMatrix);
   }
