@@ -1,16 +1,19 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using Unity.Collections;
 
 [RequireComponent(typeof(MeshFilter))]
 public class VerletCloth : MonoBehaviour {
   public Transform anchor1;
   public Transform anchor2;
 
-  List<Verlet.DistConstraint> constraints;
+  List<Verlet.DistConstraint> constraintsList;
+  NativeArray<Verlet.DistConstraint> constraintsArray;
   Mesh clothMesh;
-  Vector3[] clothVerts;
-  Vector3[] prevClothVerts;
-  Vector4[] accumulatedDisplacements;
+  protected Vector3[] clothVertsArray;
+  NativeArray<Vector3> clothVerts;
+  NativeArray<Vector3> prevClothVerts;
+  NativeArray<Vector4> accumulatedDisplacements;
   Vector3 scaledGravity;
   float previousDeltaTime = 1f;
 
@@ -18,14 +21,15 @@ public class VerletCloth : MonoBehaviour {
     MeshFilter filter = GetComponent<MeshFilter>();
     clothMesh = Instantiate(filter.mesh);
     clothMesh.MarkDynamic();
-    clothVerts = clothMesh.vertices;
-    prevClothVerts = clothMesh.vertices;
-    accumulatedDisplacements = new Vector4[clothVerts.Length];
+    clothVerts = new NativeArray<Vector3>(clothMesh.vertices, Allocator.Persistent);
+    prevClothVerts = new NativeArray<Vector3>(clothMesh.vertices, Allocator.Persistent);
+    accumulatedDisplacements = new NativeArray<Vector4>(new Vector4[clothVerts.Length], Allocator.Persistent);
     filter.mesh = clothMesh;
 
     //Create Distance Constraints from Triangles in Mesh
-    constraints = new List<Verlet.DistConstraint>(clothVerts.Length * 3);
-    Verlet.setUpConstraints(clothMesh, constraints, false);
+    constraintsList = new List<Verlet.DistConstraint>(clothVerts.Length * 3);
+    Verlet.setUpConstraints(clothMesh, constraintsList, false);
+    constraintsArray = new NativeArray<Verlet.DistConstraint>(constraintsList.ToArray(), Allocator.Persistent);
 
     //Scale gravity by the size of this Mesh Renderer
     scaledGravity = new Vector3(Physics.gravity.x / transform.lossyScale.x, Physics.gravity.y / transform.lossyScale.y, Physics.gravity.z / transform.lossyScale.z);
@@ -41,12 +45,20 @@ public class VerletCloth : MonoBehaviour {
     clothVerts[10] = prevClothVerts[10] = anchor2.position;
 
     //Constraint Resolution
-    Verlet.resolveDistanceConstraints(constraints, ref clothVerts, ref accumulatedDisplacements, 1);
+    Verlet.resolveDistanceConstraints(constraintsArray, ref clothVerts, ref accumulatedDisplacements, 1);
 
     //Graphics
-    clothMesh.vertices = clothVerts;
+    clothVerts.CopyTo(clothVertsArray);
+    clothMesh.vertices = clothVertsArray;
     clothMesh.RecalculateNormals();
     clothMesh.RecalculateBounds();
     clothMesh.UploadMeshData(false);
+  }
+
+  void OnDestroy() {
+    constraintsArray.Dispose();
+    clothVerts.Dispose();
+    prevClothVerts.Dispose();
+    accumulatedDisplacements.Dispose();
   }
 }

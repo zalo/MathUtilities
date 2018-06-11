@@ -4,4 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Verlet/Softbody/SoftbodyJob/SoftbodyJob.unity
+    guid: 97ef324c712a57d4aa6549961e16ace8
+  m_configObjects: {}

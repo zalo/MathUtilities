@@ -25,7 +25,8 @@ public class VolumeExpander : MonoBehaviour {
   protected float initialVolume = (4f / 3f) * Mathf.PI;
   protected float initialSurfaceArea = 4f * Mathf.PI;
   protected float previousDeltaTime = 1f;
-
+  //Deprecate, concept was only mildly entertaining; not worth upgrading
+  /*
   void Start() {
     //Initialize mesh and state variables
     MeshFilter filter = GetComponent<MeshFilter>();
@@ -92,4 +93,5 @@ public class VolumeExpander : MonoBehaviour {
     bodyMesh.RecalculateBounds();
     bodyMesh.UploadMeshData(false);
   }
+  */
 }
