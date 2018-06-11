@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
+using Unity.Burst;
 
-public class ParticleJob : MonoBehaviour {
+public class ParticlesJobified : MonoBehaviour {
   public int numParticles = 10230;
   public VectorField vectorField;
   public Mesh sphereMesh;
@@ -11,37 +12,21 @@ public class ParticleJob : MonoBehaviour {
   Matrix4x4[] particles;
   Matrix4x4[] instanceMatrices = new Matrix4x4[1023];
 
-  public struct ParticleData : IJobParallelFor, System.IDisposable {
-    [ReadOnly]
-    public VectorFieldStruct field;
+  public struct ParticleData : System.IDisposable {
     public NativeArray<Vector3> particlesCurrent;
     public NativeArray<Vector3> particlesPrevious;
     [WriteOnly]
     public NativeArray<Matrix4x4> particleMatrices;
 
-    public ParticleData(int numParticles, VectorFieldStruct field) {
+    public ParticleData(int numParticles) {
       particlesCurrent = new NativeArray<Vector3>(numParticles, Allocator.Persistent);
       particlesPrevious = new NativeArray<Vector3>(numParticles, Allocator.Persistent);
       particleMatrices = new NativeArray<Matrix4x4>(numParticles, Allocator.Persistent);
 
       for (int i = 0; i < numParticles; i++) {
-        particlesCurrent[i] = Random.insideUnitSphere + (Vector3.one*0.5f);
+        particlesCurrent[i] = Random.insideUnitSphere + (Vector3.one * 0.5f);
         particlesPrevious[i] = particlesCurrent[i] + (Random.insideUnitSphere * 0.01f);
       }
-      this.field = field;
-    }
-
-    public void Execute(int i) {
-      //Sample the Vector Field
-      particlesCurrent[i] += field.trilinearSample(particlesCurrent[i]) * 0.1f;
-
-      //Integrate the Particle via Verlet Integration
-      Vector3 temp = particlesCurrent[i];
-      particlesCurrent[i] += (particlesCurrent[i] - particlesPrevious[i]);
-      particlesPrevious[i] = temp;
-
-      //Write the particle positions out to transformation matrices
-      particleMatrices[i] = Matrix4x4.TRS(particlesCurrent[i], Quaternion.identity, Vector3.one * 0.01f);
     }
 
     public void Dispose() {
@@ -51,14 +36,38 @@ public class ParticleJob : MonoBehaviour {
     }
   }
 
+  [ComputeJobOptimization]//[BurstCompile]
+  public struct ParticleJob : IJobParallelFor {
+    [ReadOnly]
+    public VectorFieldStruct field;
+    public ParticleData data;
+    public ParticleJob(ParticleData data, VectorFieldStruct field) {
+      this.data = data;
+      this.field = field;
+    }
+
+    public void Execute(int i) {
+      //Sample the Vector Field
+      data.particlesCurrent[i] += field.trilinearSample(data.particlesCurrent[i]) * 0.1f;
+
+      //Integrate the Particle via Verlet Integration
+      Vector3 temp = data.particlesCurrent[i];
+      data.particlesCurrent[i] += (data.particlesCurrent[i] - data.particlesPrevious[i]);
+      data.particlesPrevious[i] = temp;
+
+      //Write the particle positions out to transformation matrices
+      data.particleMatrices[i] = Matrix4x4.TRS(data.particlesCurrent[i], new Quaternion(0f,0f,0f,1f), new Vector3(1f,1f,1f) * 0.01f);
+    }
+  }
+
   void Start() {
     if (!vectorField.hasStarted) { vectorField.Start(); }
-    particleData = new ParticleData(numParticles, vectorField.field);
+    particleData = new ParticleData(numParticles);
     particles = new Matrix4x4[numParticles];
   }
 
   void Update() {
-    particleData.Schedule(particles.Length, 128).Complete();
+    new ParticleJob(particleData, vectorField.field).Schedule(particles.Length, 2048).Complete();
     particleData.particleMatrices.CopyTo(particles);
     
     //Draw the particles 1023 at a time (since DrawMeshInstanced can't do any more at once)

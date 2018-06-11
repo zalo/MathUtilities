@@ -2,8 +2,11 @@
   "dependencies": {
     "com.unity.ads": "exclude",
     "com.unity.analytics": "exclude",
+    "com.unity.burst": "0.2.3",
+    "com.unity.mathematics": "0.0.11",
     "com.unity.purchasing": "exclude",
     "com.unity.standardevents": "exclude",
     "com.unity.textmeshpro": "exclude"
-  }
+  },
+  "registry": "https://staging-packages.unity.com"
 }

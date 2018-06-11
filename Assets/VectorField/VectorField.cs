@@ -15,9 +15,15 @@ public class VectorField : MonoBehaviour {
 
   public void Start() {
     if (!hasStarted) {
-      field = new VectorFieldStruct(dimension, resolution, ringField);
+      field = new VectorFieldStruct(dimension, transform.localToWorldMatrix, transform.worldToLocalMatrix, resolution, ringField);
       hasStarted = true;
     }
+  }
+
+  public void Update() {
+    if (!hasStarted) { return; }
+    field.localToWorld = transform.localToWorldMatrix;
+    field.worldToLocal = transform.worldToLocalMatrix;
   }
 
   public void OnDrawGizmos() {
@@ -37,7 +43,7 @@ public class VectorField : MonoBehaviour {
   }
 
   public Vector3 trilinearSample(Vector3 position) {
-    return transform.TransformDirection(field.trilinearSample(transform.InverseTransformPoint(position)));
+    return field.trilinearSample(position);
   }
 
   private void OnDestroy() {
@@ -48,9 +54,13 @@ public class VectorField : MonoBehaviour {
 public struct VectorFieldStruct : System.IDisposable {
   public Native3DArray<Vector3> field;
   public Vector3 dimension;
+  public Matrix4x4 worldToLocal;
+  public Matrix4x4 localToWorld;
 
-  public VectorFieldStruct(Vector3 dimension, int resolution, System.Func<Vector3, Vector3> fieldFunction) {
+  public VectorFieldStruct(Vector3 dimension, Matrix4x4 localToWorld, Matrix4x4 worldToLocal, int resolution, System.Func<Vector3, Vector3> fieldFunction) {
     this.dimension = dimension;
+    this.localToWorld = localToWorld;
+    this.worldToLocal = worldToLocal;
     field = new Native3DArray<Vector3>(resolution, resolution, resolution);
     for (int i = 0; i < field.GetLength(0); i++) {
       for (int j = 0; j < field.GetLength(1); j++) {
@@ -67,10 +77,11 @@ public struct VectorFieldStruct : System.IDisposable {
   }
 
   public Vector3 trilinearSample(Vector3 position) {
+    Vector3 localPosition = worldToLocal.MultiplyPoint3x4(position);
     Vector3 indexPosition = Vector3.Scale(new Vector3(
-      position.x / dimension.x,
-      position.y / dimension.y,
-      position.z / dimension.z), new Vector3(
+      localPosition.x / dimension.x,
+      localPosition.y / dimension.y,
+      localPosition.z / dimension.z), new Vector3(
         field.GetLength(0) - 1,
         field.GetLength(1) - 1,
         field.GetLength(2) - 1));
@@ -94,7 +105,7 @@ public struct VectorFieldStruct : System.IDisposable {
     Vector3 y2 = Vector3.LerpUnclamped(x3, x4, yalpha);
 
     //1 Lerp
-    return Vector3.LerpUnclamped(y1, y2, zalpha);
+    return localToWorld.MultiplyVector(Vector3.LerpUnclamped(y1, y2, zalpha));
   }
 
   public void Dispose() {
