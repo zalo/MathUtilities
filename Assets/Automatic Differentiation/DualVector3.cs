@@ -34,6 +34,36 @@ namespace AutoDiff {
 
     #endregion
 
+    #region Properties
+
+    public Vector3 Value {
+      get {
+        return new Vector3(x.Value, y.Value, z.Value);
+      }
+      set {
+        x = new DualNumber(value.x, x.Derivative);
+        y = new DualNumber(value.y, y.Derivative);
+        z = new DualNumber(value.z, z.Derivative);
+      }
+    }
+
+    public Vector3 Derivative {
+      get {
+        return new Vector3(x.Derivative, y.Derivative, z.Derivative);
+      }
+      set {
+        x = new DualNumber(x.Value, value.x);
+        y = new DualNumber(y.Value, value.y);
+        z = new DualNumber(z.Value, value.z);
+      }
+    }
+
+    public static readonly DualVector3 right = new DualVector3(Vector3.right);
+    public static readonly DualVector3 up = new DualVector3(Vector3.up);
+    public static readonly DualVector3 forward = new DualVector3(Vector3.forward);
+
+    #endregion
+
     #region Operators 
 
     public static implicit operator DualVector3(Vector3 value) {
@@ -48,6 +78,14 @@ namespace AutoDiff {
       return new DualVector3(first.x + second.x, first.y + second.y, first.z + second.z);
     }
 
+    public static DualVector3 operator +(DualVector3 first, Vector3 second) {
+      return new DualVector3(first.Value + second, first.Derivative);
+    }
+
+    public static DualVector3 operator +(Vector3 first, DualVector3 second) {
+      return second + first;
+    }
+
     public static DualVector3 operator -(DualVector3 vector) {
       return new DualVector3(-vector.x, -vector.y, -vector.z);
     }
@@ -58,6 +96,10 @@ namespace AutoDiff {
 
     public static DualVector3 operator *(DualVector3 first, DualNumber second) {
       return new DualVector3(first.x * second, first.y * second, first.z * second);
+    }
+
+    public static DualVector3 operator *(Quaternion first, DualVector3 second) {
+      return new DualVector3(first * second.Value, first * second.Derivative);
     }
 
     public static DualVector3 operator /(DualVector3 first, DualNumber second) {

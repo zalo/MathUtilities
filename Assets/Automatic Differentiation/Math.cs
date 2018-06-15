@@ -93,6 +93,21 @@ namespace AutoDiff {
       return Pow(SqrMagnitude(vector), 0.5f);
     }
 
+    public static DualVector3 Normalize(this DualVector3 vector) {
+      return vector/vector.Magnitude();
+    }
+
+    /// <summary> Orthogonalizes the rotation; preserves forward then y </summary>
+    public static DualMatrix4x3 Orthogonalize(this DualMatrix4x3 matrix) {
+      DualVector3 newXBasis = matrix.yBasis.Cross(matrix.zBasis);
+      return new DualMatrix4x3(newXBasis, newXBasis.Cross(matrix.zBasis), matrix.zBasis, matrix.translation);
+    }
+
+    /// <summary> Normalizes the rotation; preserves forward </summary>
+    public static DualMatrix4x3 Normalize(this DualMatrix4x3 matrix) {
+      return new DualMatrix4x3(matrix.xBasis.Normalize(), matrix.yBasis.Normalize(), matrix.zBasis.Normalize(), matrix.translation);
+    }
+
     #endregion
 
     #region Helpers

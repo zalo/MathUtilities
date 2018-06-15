@@ -1,5 +1,6 @@
 ﻿//Copyright (c) 2014 Ivan Gusiev <ivan.gusiev@gmail.com>
 //https://github.com/ivan-gusiev/autodiff/
+using UnityEngine;
 namespace AutoDiff
 {
         /*	represents a number in form n = <r, d>
@@ -109,9 +110,14 @@ namespace AutoDiff
                                    derivNumerator / (second.Value * second.Value));
         }
 
-        #endregion
+        public static DualVector3 operator *(DualNumber first, Vector3 second) 
+        {
+          return new DualVector3(second) * first;
+        }
 
-        public override string ToString()
+    #endregion
+
+    public override string ToString()
         {
             return string.Format("<{0}; {1}>", Value, Derivative);
         }
