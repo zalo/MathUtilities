@@ -360,6 +360,7 @@ GameObject:
   - component: {fileID: 2075341552}
   - component: {fileID: 2075341551}
   - component: {fileID: 2075341550}
+  - component: {fileID: 2075341554}
   m_Layer: 0
   m_Name: FittingCube
   m_TagString: Untagged
@@ -373,7 +374,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 2075341549}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 15ea8e8532f95914c8de8362a71bfab4, type: 3}
   m_Name: 
@@ -439,3 +440,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2075341554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2075341549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d293aad7ea0b0fb41bbf6db4001aec86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseTransform: {fileID: 720733152}
+  lowPolyIcoSphere: {fileID: 4300000, guid: 740866b444560094cbeee646e93bbe62, type: 2}
+  fitPosition: 1
+  fitRotation: 1
+  fitScale: 0
+  alpha: 0.25
+  drawDebug: 1
