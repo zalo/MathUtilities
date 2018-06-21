@@ -12,7 +12,7 @@ public static class Verlet {
       Vector3 tempPos = curPoints[i];
 
       //Integrate Position
-      curPoints[i] += ((curPoints[i] - prevPoints[i]) * (deltaTime / prevDeltaTime)) + (gravity * deltaTime * deltaTime);
+      curPoints[i] += ((curPoints[i] - prevPoints[i]) /** (deltaTime / prevDeltaTime))*/ + (gravity * /*deltaTime * deltaTime*/(1f/3600f)));
 
       //Store State from Previous Frame
       prevPoints[i] = tempPos;

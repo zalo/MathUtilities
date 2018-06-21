@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.Jobs;
 using Unity.Collections;
 using UnityEngine.Profiling;
+using Unity.Jobs.LowLevel.Unsafe;
 
 [RequireComponent(typeof(MeshFilter))]
 public class SoftbodyJobified : MonoBehaviour {
@@ -236,6 +237,7 @@ public class SoftbodyJobified : MonoBehaviour {
   protected Vector4[] kabschVertsArray;
   protected KabschSolver kabschSolver = new KabschSolver();
   protected Vector3 scaledGravity;
+  protected bool priorDebuggerState;
 
   JobHandle groundCollide;
 
@@ -258,6 +260,9 @@ public class SoftbodyJobified : MonoBehaviour {
       new Vector3(Physics.gravity.x / transform.lossyScale.x, 
                   Physics.gravity.y / transform.lossyScale.y, 
                   Physics.gravity.z / transform.lossyScale.z), groundPlane);
+
+    priorDebuggerState = JobsUtility.JobDebuggerEnabled;
+    JobsUtility.JobDebuggerEnabled = false;
   }
 
   void Update() {
@@ -356,5 +361,6 @@ public class SoftbodyJobified : MonoBehaviour {
 
   void OnDestroy() {
     softbodyData.Dispose();
+    JobsUtility.JobDebuggerEnabled = priorDebuggerState;
   }
 }
