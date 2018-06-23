@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Unity.Jobs;
 using Unity.Collections;
 using UnityEngine;
 
@@ -86,7 +86,7 @@ public static class Verlet {
 
   //Distance Constraints and Constraint Utility Functions
   [StructLayout(LayoutKind.Sequential)]
-  public struct DistConstraint {
+  public struct DistConstraint : IEquatable<DistConstraint> {
     public int index1;
     public int index2;
     public float Distance;
@@ -98,17 +98,23 @@ public static class Verlet {
       index2 = i2;
       Distance = Vector3.Distance(verts[index1], verts[index2]);
       sqrDistance = Distance * Distance;
-      equality = EqualityConstraint?1:0;
+      equality = EqualityConstraint ? 1 : 0;
     }
 
-    public void ResolveConstraint(NativeArray<Vector3> vertices, ref NativeArray<Vector4> accumulatedDisplacements) {
-      if (equality==1 || (vertices[index1] - vertices[index2]).sqrMagnitude > sqrDistance) {
+    public void ResolveConstraint(NativeArray<Vector3> vertices, ref NativeArray<Vector4> accumulatedDisplacements, bool resolveIndex2 = true) {
+      if ((index1 != index2) && (equality == 1 || (vertices[index1] - vertices[index2]).sqrMagnitude > sqrDistance)) {
         Vector3 offset = (vertices[index2] - vertices[index1]);
         offset *= sqrDistance / (Vector3.Dot(offset, offset) + sqrDistance) - 0.5f;
         accumulatedDisplacements[index1] += new Vector4(-offset.x, -offset.y, -offset.z, 1f);
-        accumulatedDisplacements[index2] += new Vector4(offset.x, offset.y, offset.z, 1f);
+        if (resolveIndex2) { accumulatedDisplacements[index2] += new Vector4(offset.x, offset.y, offset.z, 1f); }
       }
     }
+
+    public static bool operator ==(DistConstraint lhs, DistConstraint rhs) { return lhs.index1 == rhs.index1 && lhs.index2 == rhs.index2; }
+    public static bool operator !=(DistConstraint lhs, DistConstraint rhs) { return !(lhs == rhs); }
+    public override int GetHashCode() { return (index1 + index2) * (index1 * index2) + (index1 + index2); }
+    public bool Equals(DistConstraint other) {return index1.Equals(other.index1) && index2.Equals(other.index2); }
+    public override bool Equals(object other) {if (!(other is DistConstraint)) return false; return Equals((DistConstraint)other); }
   }
 
   public static void resolveDistanceConstraints(NativeArray<DistConstraint> constraints, ref NativeArray<Vector3> verts, ref NativeArray<Vector4> accumulatedDisplacements, int iterations = 3) {
@@ -139,15 +145,12 @@ public static class Verlet {
   }
 
   public static int trySetUpConstraint(int index1, int index2, bool Equality, ref NativeArray<Vector3> constrainedVerts, ref List<DistConstraint> distanceConstraints, ref List<int> edges) {
-    int edgeHash = computeEdgeHash(index1, index2);
+    DistConstraint constraint = new DistConstraint(index1, index2, constrainedVerts, Equality);
+    int edgeHash = constraint.GetHashCode();
     if (!edges.Contains(edgeHash)) {
-      distanceConstraints.Add(new DistConstraint(index1, index2, constrainedVerts, Equality));
+      distanceConstraints.Add(constraint);
       edges.Add(edgeHash);
     }
     return distanceConstraints.Count;
-  }
-
-  private static int computeEdgeHash(int i, int j) {
-    return (i + j) * (i * j) + (i + j);
   }
 }
