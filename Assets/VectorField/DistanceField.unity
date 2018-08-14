@@ -122,10 +122,9 @@ GameObject:
   m_Component:
   - component: {fileID: 244571159}
   - component: {fileID: 244571160}
-  - component: {fileID: 244571158}
   - component: {fileID: 244571157}
   m_Layer: 0
-  m_Name: VectorField
+  m_Name: Particle Field
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -142,21 +141,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8c791bab4d89f34e8041e83b4d5ea59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  modifier: {fileID: 244571158}
-  startingRandomVelocityMultiplier: 0.01
---- !u!114 &244571158
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 244571156}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ade794ec5de1abf49b6108ba2f51a6a4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dimension: {x: 1, y: 1, z: 1}
-  resolution: 10
+  modifier: {fileID: 1956039687}
+  numParticles: 2000
+  startingRadius: 0.5
+  startingRandomVelocityMultiplier: 0
+  drag: 0.1
 --- !u!4 &244571159
 Transform:
   m_ObjectHideFlags: 0
@@ -168,7 +157,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &244571160
 MonoBehaviour:
@@ -333,50 +322,42 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1951685776
+--- !u!1 &1956039686
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1951685779}
-  - component: {fileID: 1951685778}
-  - component: {fileID: 1951685777}
+  - component: {fileID: 1956039690}
+  - component: {fileID: 1956039689}
+  - component: {fileID: 1956039688}
+  - component: {fileID: 1956039687}
   m_Layer: 0
-  m_Name: Description
+  m_Name: DistanceField
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!102 &1951685777
-TextMesh:
-  serializedVersion: 3
+--- !u!114 &1956039687
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1951685776}
-  m_Text: "Hit Play and watch the \nparticles get advected \nby the Vector Field."
-  m_OffsetZ: 0
-  m_CharacterSize: 0.045
-  m_LineSpacing: 1
-  m_Anchor: 4
-  m_Alignment: 1
-  m_TabSize: 4
-  m_FontSize: 50
-  m_FontStyle: 0
-  m_RichText: 0
-  m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Color:
-    serializedVersion: 2
-    rgba: 4294967295
---- !u!23 &1951685778
+  m_GameObject: {fileID: 1956039686}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81f568b06aa2959409b6e1fbb8e7945f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  falloffDistance: 0.5
+--- !u!23 &1956039688
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1951685776}
+  m_GameObject: {fileID: 1956039686}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -386,7 +367,7 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RenderingLayerMask: 4294967295
   m_Materials:
-  - {fileID: 10100, guid: 0000000000000000e000000000000000, type: 0}
+  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -406,16 +387,23 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!4 &1951685779
+--- !u!33 &1956039689
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1956039686}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &1956039690
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1951685776}
+  m_GameObject: {fileID: 1956039686}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.034, y: 1.241, z: 0.487}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

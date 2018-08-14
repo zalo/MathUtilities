@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using Unity.Collections;
 
-public class VectorField : MonoBehaviour {
+public class VectorField : ParticleModifier {
   public VectorFieldStruct field;
   public Vector3 dimension = Vector3.one;
   public int resolution = 10;
@@ -44,6 +44,10 @@ public class VectorField : MonoBehaviour {
 
   public Vector3 trilinearSample(Vector3 position) {
     return field.trilinearSample(position);
+  }
+
+  public override void ModifierOffset(int index, ref Vector3 position, ref Vector3 previousParticlePosition, bool reset = false) {
+    position += trilinearSample(position) * 0.1f;
   }
 
   private void OnDestroy() {

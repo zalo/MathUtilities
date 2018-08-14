@@ -45,6 +45,14 @@ public static class Constraints {
     return (inPlaneA != inPlaneB) ? Vector3.Dot(lineA - inPlaneA, inPlaneBA) / Vector3.Dot(inPlaneBA, inPlaneBA) : 0f;
   }
 
+  public static float ClosestTimeOnRayToRay(Ray a, Ray b) {
+    return ClosestTimeOnSegmentToLine(a.origin, a.origin + a.direction, b.origin, b.origin + b.direction);
+  }
+
+  public static Vector3 ClosestPointOnRayToRay(Ray a, Ray b) {
+    return Vector3.LerpUnclamped(b.origin, b.origin + b.direction, ClosestTimeOnSegmentToLine(b.origin, b.origin + b.direction, a.origin, a.origin + a.direction));
+  }
+
   public static Vector3 ClosestPointOnSegmentToLine(Vector3 segA, Vector3 segB, Vector3 lineA, Vector3 lineB) {
     return Vector3.Lerp(segA, segB, ClosestTimeOnSegmentToLine(segA, segB, lineA, lineB));
   }
