@@ -9,7 +9,7 @@ public class DragObject : MonoBehaviour {
     body = GetComponent<Rigidbody2D>();
   }
 
-	void FixedUpdate () {
+	void Update () {
     Ray mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
     if (Input.GetMouseButtonDown(0)) {
       if (body.GetComponent<Collider2D>().OverlapPoint(mouseRay.origin)) {

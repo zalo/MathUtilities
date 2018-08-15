@@ -107,6 +107,10 @@ This is a technique for augmenting the end-point of trajectories composed of dis
 Inspired by this paper: https://april.eecs.umich.edu/media/pdfs/olson2006icra.pdf
 
 
+### [Rigid Transform Pivot Point](https://github.com/zalo/MathUtilities/tree/master/Assets/Pivot) [[Gif]](https://imgur.com/5iCUe2A)
+What appears to be a unique geometric solution for calculating the pivot point of a rigid transformation in 2D and 3D (where applicable).  Is computationally efficient, geometrically intuitive, and can be extended to arbitrary dimensions.
+
+
 ### [Thick Tesellated Plane Generator](https://github.com/zalo/MathUtilities/tree/master/Assets/ThickPlane)
 Useful for generating solid meshes that are essentially deformed planes (shapes that are common in free-form optics).
 
