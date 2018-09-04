@@ -118,7 +118,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct ToWorldSpaceJob : IJobParallelFor {
     [ReadOnly]
     public Matrix4x4 localToWorld;
@@ -128,7 +128,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct VerletIntegrateJob : IJobParallelFor {
     public NativeArray<Vector3> bodyVerts, prevBodyVerts;
     public Vector3 scaledGravity;
@@ -139,7 +139,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct AccumulateDistanceConstraintsJob : IJob {//ParallelFor {
     [ReadOnly]
     public NativeArray<Vector3> bodyVerts;
@@ -152,7 +152,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct ApplyAccumulatedConstraintsJob : IJobParallelFor {
     public NativeArray<Vector3> bodyVerts;
     public NativeArray<Vector4> accumulatedDisplacements;
@@ -163,7 +163,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct CalculateDistanceConstraintsJob : IJobParallelFor {
     [ReadOnly]
     public NativeArray<Vector3> bodyVerts;
@@ -185,7 +185,7 @@ public class SoftbodyJobified : MonoBehaviour {
   //then you could have 1 job that just calculates the normal of each triangle, and stores that into an array(regular parallel for job)
   //and then another job that loops through each vertex
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct AccumulateNormalsJob : IJob{//ParallelFor {
     [ReadOnly]
     public NativeArray<Vector3> bodyVerts;
@@ -203,7 +203,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct NormalizeNormalsJob : IJobParallelFor {
     public NativeArray<Vector3> bodyNormals;
     public void Execute(int i) {
@@ -211,7 +211,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct GatherNormalsJob : IJobParallelFor {
     [ReadOnly]
     public NativeArray<Vector3> bodyVerts;
@@ -254,7 +254,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct AccumulateSurfaceAreaAndVolumeJob : IJobParallelFor {
     [ReadOnly]
     public NativeArray<Vector3> bodyVerts;
@@ -275,7 +275,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct SurfaceAreaAndVolumeAccumulatorJob : IJobParallelFor {
     [ReadOnly]
     public NativeArray<Vector3> bodyVerts;
@@ -292,7 +292,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct CalculateSurfaceAreaAndVolumeJob : IJob {
     [ReadOnly]
     public NativeArray<float> triangleVolumes, triangleSurfaceAreas;
@@ -323,7 +323,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct CalculateDilationJob : IJob {
     [ReadOnly]
     public NativeAccumulator<float, Addition> volumeAccumulator, areaAccumulator;
@@ -346,7 +346,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct ExtrudeNormalsJob : IJobParallelFor {
     public NativeArray<Vector3> bodyVerts;
     [ReadOnly]
@@ -358,7 +358,7 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct GroundCollideJob : IJobParallelFor {
     public NativeArray<Vector3> bodyVerts;
     [ReadOnly]
@@ -373,12 +373,12 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
-  //[ComputeJobOptimization]
+  //[Unity.Burst.BurstCompile]
   private static Vector3 projectToPlane(Vector3 point, Vector3 normalizedPlaneNormal) {
     return point - (Vector3.Dot(point, normalizedPlaneNormal) * normalizedPlaneNormal);
   }
 
-  [ComputeJobOptimization]
+  [Unity.Burst.BurstCompile]
   public struct ToLocalSpaceJob : IJobParallelFor {
     [ReadOnly]
     public Matrix4x4 worldToLocal;

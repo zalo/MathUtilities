@@ -36,7 +36,7 @@ public class ParticlesJobified : MonoBehaviour {
     }
   }
 
-  [ComputeJobOptimization]//[BurstCompile]
+  [BurstCompile]
   public struct ParticleJob : IJobParallelFor {
     [ReadOnly]
     public VectorFieldStruct field;
