@@ -27,10 +27,8 @@ Also known as Procrustes Analysis, this algorithm can take in an arbitrary set o
 Update: Added an example for averaging arbitrary numbers of quaternions; possibly more accurate than a normalized lerp (averaging the quaternion components in linear space and then normalizing).
 
 
-## [Least Squares Line/Plane Fitting](https://github.com/zalo/MathUtilities/blob/master/Assets/LeastSquares/LeastSquaresFitting.cs#L24)
+## [Least Squares Line/Plane Fitting](https://github.com/zalo/MathUtilities/blob/master/Assets/LeastSquares/LeastSquaresFitting.cs#L24) [[Pic]](https://i.imgur.com/xTGKnx5)
 <img src="https://i.imgur.com/NBtYiIq.gif">
-
-<img src="https://i.imgur.com/xTGKnx5.png">
 
 A generic helper utility for fitting lines and planes to point-sets in 3D.  Uses a novel* matrix-less formulation to solve for the orthogonal lines and planes of best fit; algorithm is without singularities and is extensible to arbitrary dimensionality.
 
