@@ -36,6 +36,8 @@ public class SoftbodyJobified : MonoBehaviour {
     public NativeArray<float> triangleSurfaceAreas;
     public NativeAccumulator<float, Addition> volumeAccumulator;
     public NativeAccumulator<float, Addition> areaAccumulator;
+    public NativeArray<RaycastCommand> raycasts;
+    public NativeArray<RaycastHit> raycastHits;
 
     public Matrix4x4 localToWorld, worldToLocal;
     public Vector3 scaledGravity, groundPlanePos, groundPlaneNormal;
@@ -53,9 +55,9 @@ public class SoftbodyJobified : MonoBehaviour {
       renderNormals = new NativeArray<Vector3>(bodyMesh.normals, Allocator.Persistent);
       prevBodyVerts = new NativeArray<Vector3>(new Vector3[bodyVerts.Length], Allocator.Persistent);
       accumulatedDisplacements = new NativeArray<Vector4>(new Vector4[bodyVerts.Length], Allocator.Persistent);
-      for (int i = 0; i < bodyVerts.Length; i++) {
-        prevBodyVerts[i] = transform.TransformPoint(bodyVerts[i]);
-      }
+      for (int i = 0; i < bodyVerts.Length; i++) prevBodyVerts[i] = transform.TransformPoint(bodyVerts[i]);
+      raycasts = new NativeArray<RaycastCommand>(new RaycastCommand[bodyVerts.Length], Allocator.Persistent);
+      raycastHits = new NativeArray<RaycastHit>(new RaycastHit[bodyVerts.Length], Allocator.Persistent);
 
       constraintsArray = new NativeArray<Verlet.DistConstraint>(constraintsList.ToArray(), Allocator.Persistent);
       dilationDistance = new NativeArray<float>(new float[1], Allocator.Persistent);
@@ -100,7 +102,9 @@ public class SoftbodyJobified : MonoBehaviour {
     }
 
     public void Dispose() {
+      raycasts.Dispose();
       bodyVerts.Dispose();
+      raycastHits.Dispose();
       kabschVerts.Dispose();
       bodyNormals.Dispose();
       bodyTriangles.Dispose();
@@ -359,21 +363,42 @@ public class SoftbodyJobified : MonoBehaviour {
   }
 
   [Unity.Burst.BurstCompile]
-  public struct GroundCollideJob : IJobParallelFor {
+  public struct RaycastPrepareJob : IJobParallelFor {
+    [ReadOnly]
     public NativeArray<Vector3> bodyVerts;
     [ReadOnly]
     public NativeArray<Vector3> prevBodyVerts;
     [ReadOnly]
-    public Vector3 groundPlanePos, groundPlaneNormal;
+    public NativeArray<Vector3> bodyNormals;
+    [WriteOnly]
+    public NativeArray<RaycastCommand> raycasts;
     public void Execute(int i) {
-      if (Vector3.Dot(bodyVerts[i] - groundPlanePos, groundPlaneNormal) < 0f) {
-        bodyVerts[i] = projectToPlane(bodyVerts[i]-groundPlanePos, groundPlaneNormal) + groundPlanePos;
-        bodyVerts[i] -= projectToPlane(bodyVerts[i]-prevBodyVerts[i], groundPlaneNormal) * 0.3f;
+      float dist = 0.4f;
+      raycasts[i] = new RaycastCommand(bodyVerts[i] - (bodyNormals[i] * dist), bodyNormals[i], dist);
+    }
+  }
+
+  [Unity.Burst.BurstCompile]
+  public struct RaycastCollisionJob : IJobParallelFor {
+    [ReadOnly]
+    public NativeArray<Vector3> prevBodyVerts;
+    [ReadOnly]
+    public NativeArray<Vector3> bodyNormals;
+    [ReadOnly]
+    public NativeArray<RaycastHit> raycastHits;
+
+    public NativeArray<Vector3> bodyVerts;
+    public void Execute(int i) {
+      if (raycastHits[i].distance != 0f) {
+        if (Vector3.Dot(bodyVerts[i] - raycastHits[i].point, raycastHits[i].normal) < 0f) {
+          bodyVerts[i] = projectToPlane(bodyVerts[i] - raycastHits[i].point, raycastHits[i].normal) + raycastHits[i].point;
+          bodyVerts[i] -= projectToPlane(bodyVerts[i] - prevBodyVerts[i], raycastHits[i].normal) * 0.3f;
+        }
       }
     }
   }
 
-  //[Unity.Burst.BurstCompile]
+  [Unity.Burst.BurstCompile]
   private static Vector3 projectToPlane(Vector3 point, Vector3 normalizedPlaneNormal) {
     return point - (Vector3.Dot(point, normalizedPlaneNormal) * normalizedPlaneNormal);
   }
@@ -531,17 +556,28 @@ public class SoftbodyJobified : MonoBehaviour {
       }.Schedule(originalVerts.Length, batchSize, dependsOn: calculateDilationDistance);
     }
 
-    //Also sneak in a ground plane here:
-    JobHandle groundPlaneHandle = new GroundCollideJob() {
+    //Prepare a batch of raycast commands
+    JobHandle raycastPrepareHandle = new RaycastPrepareJob() {
       bodyVerts = softbodyData.bodyVerts,
       prevBodyVerts = softbodyData.prevBodyVerts,
-      groundPlanePos = groundPlane.position,
-      groundPlaneNormal = -groundPlane.forward
+      raycasts = softbodyData.raycasts,
+      bodyNormals = softbodyData.bodyNormals,
     }.Schedule(originalVerts.Length, batchSize, dependsOn: previousHandle);
+
+    // Schedule the batch of raycasts
+    JobHandle batchRaycastHandle = RaycastCommand.ScheduleBatch(softbodyData.raycasts, softbodyData.raycastHits, batchSize, raycastPrepareHandle);
+
+    //Apply the results of those raycasts
+    JobHandle raycastCollisionHandle = new RaycastCollisionJob() {
+      bodyVerts = softbodyData.bodyVerts,
+      prevBodyVerts = softbodyData.prevBodyVerts,
+      raycastHits = softbodyData.raycastHits,
+      bodyNormals = softbodyData.bodyNormals,
+    }.Schedule(originalVerts.Length, batchSize, dependsOn: batchRaycastHandle);
 
     Profiler.EndSample();
 
-    groundPlaneHandle.Complete();
+    raycastCollisionHandle.Complete();
 
     //Calculate the the position and rotation of the body
     for (int i = 0; i < softbodyData.bodyVerts.Length; i++) {
