@@ -7,7 +7,7 @@ public class LeastSquaresFitting : MonoBehaviour {
   [Tooltip("Performs a plane fit when checked and a line fit when unchecked")]
   public bool doPlaneFit = false;
 
-  Vector3 position, direction;
+  public Vector3 position, direction;
   void OnDrawGizmos() {
     List<Vector3> points = new List<Vector3>(parentTransform.childCount);
     for (int i = 0; i < parentTransform.childCount; i++) points.Add(parentTransform.GetChild(i).position);

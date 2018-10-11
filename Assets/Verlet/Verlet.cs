@@ -131,8 +131,9 @@ public static class Verlet {
     }
   }
 
-  public static void setUpConstraints(Mesh constrainedMesh, List<DistConstraint> distanceConstraints, bool Equality = false) {
+  public static void setUpConstraints(Mesh constrainedMesh, List<DistConstraint> distanceConstraints, bool Equality = false, float scale = 1f) {
     NativeArray<Vector3> constrainedVerts = new NativeArray<Vector3>(constrainedMesh.vertices, Allocator.Temp);
+    for (int i = 0; i < constrainedVerts.Length; i++) constrainedVerts[i] *= scale;
     int[] constrainedTriangles = constrainedMesh.triangles;
     List<int> edges = new List<int>(constrainedMesh.vertices.Length * 3);
 
