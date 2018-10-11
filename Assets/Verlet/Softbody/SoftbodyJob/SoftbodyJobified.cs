@@ -9,6 +9,8 @@ using Unity.Jobs.LowLevel.Unsafe;
 
 [RequireComponent(typeof(MeshFilter))]
 public class SoftbodyJobified : MonoBehaviour {
+  public static List<SoftbodyJobified> s_softBodies;
+
   public Transform groundPlane;
   [Range(0.3f, 2f)]
   public float inflationAmount = 0.8f;
@@ -19,9 +21,12 @@ public class SoftbodyJobified : MonoBehaviour {
   [Range(0.0f, 1f)]
   public float friction = 0.3f;
   public bool transformFollowsRotation = false;
+  public bool collideWithOtherSoftbodies = true;
   public bool parallelNormals = false;
   public bool parallelConstraints = false;
   public bool useAreaVolumeAccumulator = false;
+
+  protected float radius = 1f;
 
   public struct SoftbodyData : IDisposable {
     public NativeArray<Verlet.DistConstraint> constraintsArray;
@@ -193,6 +198,7 @@ public class SoftbodyJobified : MonoBehaviour {
   //hmm what if you were able to precalculate some soft of structure that allows each vert to know all the triangles connected to it
   //then you could have 1 job that just calculates the normal of each triangle, and stores that into an array(regular parallel for job)
   //and then another job that loops through each vertex
+  //See GatherNormalsJob
 
   [Unity.Burst.BurstCompile]
   public struct AccumulateNormalsJob : IJob{//ParallelFor {
@@ -220,6 +226,8 @@ public class SoftbodyJobified : MonoBehaviour {
     }
   }
 
+  //Not entirely happy with this solution... it's roughly the same speed as the non-parallelized version
+  //But it fills up all the CPU cores
   [Unity.Burst.BurstCompile]
   public struct GatherNormalsJob : IJobParallelFor {
     [ReadOnly]
@@ -229,10 +237,6 @@ public class SoftbodyJobified : MonoBehaviour {
     //[WriteOnly]
     public NativeArray<Vector3> bodyNormals;
     public void Execute(int i) {
-      /*for (int j = 0; j < vertexConnections[i].numValid.x; j++) {
-        bodyNormals[i] += Vector3.Cross(bodyVerts[vertexConnections[i][j].x] - bodyVerts[vertexConnections[i][j].y],
-                                        bodyVerts[vertexConnections[i][j].x] - bodyVerts[vertexConnections[i][j].z]);
-      }*/
       Vector3 normal = new Vector3(0f, 0f, 0f);
       if (vertexConnections[i].triangle1.x != -1) {
         normal += Vector3.Cross(bodyVerts[vertexConnections[i].triangle1.x] - bodyVerts[vertexConnections[i].triangle1.y],
@@ -368,6 +372,24 @@ public class SoftbodyJobified : MonoBehaviour {
   }
 
   [Unity.Burst.BurstCompile]
+  public struct VoronoiCollideJob : IJobParallelFor {
+    public NativeArray<Vector3> bodyVerts;
+    [ReadOnly]
+    public NativeArray<Vector3> prevBodyVerts;
+    [ReadOnly]
+    public Vector3 planePos, planeNormal, velocity;
+    [ReadOnly]
+    public float friction, deltaTime;
+    public void Execute(int i) {
+      if (Vector3.Dot(bodyVerts[i] - planePos, planeNormal) < 0f) {
+        bodyVerts[i] = projectToPlane(bodyVerts[i] - planePos, planeNormal) + planePos;
+        bodyVerts[i] -= projectToPlane(bodyVerts[i] - prevBodyVerts[i], planeNormal) * friction;
+        bodyVerts[i] += velocity * deltaTime * friction;
+      }
+    }
+  }
+
+  [Unity.Burst.BurstCompile]
   public struct RaycastPrepareJob : IJobParallelFor {
     [ReadOnly]
     public float penetrationDepth;
@@ -439,9 +461,15 @@ public class SoftbodyJobified : MonoBehaviour {
 
   JobHandle groundCollide;
 
+  void OnEnable() {
+    if (s_softBodies == null) s_softBodies = new List<SoftbodyJobified>();
+    s_softBodies.Add(this);
+  }
+  void OnDisable() { s_softBodies.Remove(this); }
+
   void Start() {
     //Initialize mesh and state variables
-    float radius = transform.lossyScale.x;
+    radius = transform.lossyScale.x;
     transform.localScale = Vector3.one;
     MeshFilter filter = GetComponent<MeshFilter>();
     bodyMesh = Instantiate(filter.mesh);
@@ -468,11 +496,11 @@ public class SoftbodyJobified : MonoBehaviour {
   void Update() {
     Profiler.BeginSample("Schedule Softbody Work", this);
 
-    int batchSize = 16;
+    int batchSize = 8;
     softbodyData.friction = friction;
 
     //Transform the points into world space
-    JobHandle localToWorldHandle = new ToWorldSpaceJob () {
+    JobHandle localToWorldHandle = new ToWorldSpaceJob() {
       localToWorld = transform.localToWorldMatrix,
       bodyVerts = softbodyData.bodyVerts
     }.Schedule(originalVerts.Length, batchSize);
@@ -570,6 +598,23 @@ public class SoftbodyJobified : MonoBehaviour {
       }.Schedule(originalVerts.Length, batchSize, dependsOn: calculateDilationDistance);
     }
 
+    //Also collide with other softbodies
+    if (collideWithOtherSoftbodies) {
+      foreach (SoftbodyJobified softbody in s_softBodies) {
+        if (softbody != this) {
+          Vector3 midPoint = Vector3.Lerp(transform.position, softbody.transform.position, (radius/softbody.radius) * 0.5f);
+          previousHandle = new VoronoiCollideJob() {
+            bodyVerts = softbodyData.bodyVerts,
+            prevBodyVerts = softbodyData.prevBodyVerts,
+            planePos = midPoint,
+            planeNormal = (transform.position - midPoint).normalized,
+            friction = 0f,
+            velocity = new Vector3(0f, 0f, 0f)
+          }.Schedule(originalVerts.Length, batchSize, dependsOn: previousHandle);
+        }
+      }
+    }
+
     //Prepare a batch of raycast commands
     JobHandle raycastPrepareHandle = new RaycastPrepareJob() {
       bodyVerts = softbodyData.bodyVerts,
@@ -643,7 +688,6 @@ public class SoftbodyJobified : MonoBehaviour {
     softbodyData.Dispose();
     JobsUtility.JobDebuggerEnabled = priorDebuggerState;
   }
-
 
   //Calculate the connections from each vertex to each other vertex
   [StructLayout(LayoutKind.Sequential)]
