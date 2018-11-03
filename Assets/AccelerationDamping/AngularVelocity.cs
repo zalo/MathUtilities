@@ -6,7 +6,7 @@ public class AngularVelocity : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-    body.GetComponent<Rigidbody>();
+    body = GetComponent<Rigidbody>();
 	}
 	
 	// Update is called once per frame
