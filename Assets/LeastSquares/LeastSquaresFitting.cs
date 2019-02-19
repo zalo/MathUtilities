@@ -8,7 +8,7 @@ public class LeastSquaresFitting : MonoBehaviour {
   [Tooltip("Performs a plane fit when checked and a line fit when unchecked")]
   public FitType fitType = FitType.Line;
 
-  public Vector3 position, direction;
+  public Vector3 origin, direction;
   void OnDrawGizmos() {
     List<Vector3> points = new List<Vector3>(parentTransform.childCount);
     foreach(Transform child in parentTransform) {
@@ -18,9 +18,9 @@ public class LeastSquaresFitting : MonoBehaviour {
     }
 
     if (fitType == FitType.Line) {
-      Fit.Line(points, out position, ref direction, 100, true);
+      Fit.Line(points, out origin, ref direction, 100, true);
     } else if (fitType == FitType.Plane) {
-      Fit.Plane(points, out position, out direction, 100, true);
+      Fit.Plane(points, out origin, out direction, 100, true);
     } else if (fitType == FitType.OrdinaryLine) {
       Fit.Polynomial(points, 1, true);
     } else if (fitType == FitType.OrdinaryParabola) {
@@ -35,39 +35,66 @@ public class LeastSquaresFitting : MonoBehaviour {
 public static class Fit {
   //These techniques should be extensible to n-dimensions
 
-  public static void Line(List<Vector3> points, out Vector3 position,
-  ref Vector3 direction, int iters = 100, bool drawGizmos = false) {
+  public static void Line(List<Vector3> points, out Vector3 origin,
+                          ref Vector3 direction, int iters = 100, bool drawGizmos = false) {
+    if (
+    direction == Vector3.zero ||
+    float.IsNaN(direction.x) ||
+    float.IsInfinity(direction.x)) direction = Vector3.up;
+
+    //Calculate Average
+    origin = Vector3.zero;
+    for (int i = 0; i < points.Count; i++) origin += points[i];
+    origin /= points.Count;
+
+    // Step the optimal fitting line approximation:
+    // The new direction is the average of the centered points
+    // scaled by their projection along the normalized current direction
+    for (int iter = 0; iter < iters; iter++) {
+      Vector3 newDirection = Vector3.zero;
+      foreach (Vector3 worldSpacePoint in points) {
+        Vector3 point = worldSpacePoint - origin;
+        newDirection += Vector3.Dot(direction, point) * point;
+      }
+      direction = newDirection.normalized;
+    }
+
+    if (drawGizmos) {
+      Gizmos.color = Color.red;
+      Gizmos.DrawRay(origin, direction * 2f);
+      Gizmos.DrawRay(origin, -direction * 2f);
+    }
+  }
+
+
+  public static void LineOld(List<Vector3> points, out Vector3 origin,
+                             ref Vector3 direction, int iters = 100, bool drawGizmos = false) {
     if (
     direction == Vector3.zero ||
     float.IsNaN(direction.x) ||
     float.IsInfinity(direction.x)) direction = Vector3.right;
 
     //Calculate Average
-    position = Vector3.zero;
-    for (int i = 0; i < points.Count; i++) position += points[i];
-    position /= points.Count;
+    origin = Vector3.zero;
+    for (int i = 0; i < points.Count; i++) origin += points[i];
+    origin /= points.Count;
 
     //Step the optimal fitting line approximation
     for (int iter = 0; iter < iters; iter++) {
       Vector3 accumulatedOffset = Vector3.zero; float sum = 0f;
       for (int i = 0; i < points.Count; i++) {
-        float alpha = TimeAlongSegment(points[i], position, position + direction);
-        Vector3 lineToPointOffset = points[i] - Vector3.LerpUnclamped(position, position + direction, alpha);
+        float alpha = TimeAlongSegment(points[i], origin, origin + direction);
+        Vector3 lineToPointOffset = points[i] - Vector3.LerpUnclamped(origin, origin + direction, alpha);
         accumulatedOffset += lineToPointOffset * alpha;
         sum += alpha * alpha;
-
-        if (drawGizmos) {
-          Gizmos.color = Color.red;
-          Gizmos.DrawRay(points[i], -lineToPointOffset);
-        }
       }
       direction += accumulatedOffset / sum;
       direction = direction.normalized;
     }
     if (drawGizmos) {
       Gizmos.color = Color.white;
-      Gizmos.DrawRay(position, direction * 2f);
-      Gizmos.DrawRay(position, -direction * 2f);
+      Gizmos.DrawRay(origin, direction * 2f);
+      Gizmos.DrawRay(origin, -direction * 2f);
     }
   }
 
