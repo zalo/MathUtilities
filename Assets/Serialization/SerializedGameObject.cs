@@ -130,6 +130,7 @@ public static class JsonSerializer {
     component.enginePropertyNames = new List<string>();
     component.enginePropertyValues = new List<string>();
     for (int j = 0; j < info.Length; j++) {
+      if(info[j].Name == "mesh") { continue; }
       string json = serializeProperty(info[j], ref toSerialize);
       string defaultJson = serializeProperty(info[j], ref defaultComponent);
       if (json != "" && json != defaultJson) {
@@ -155,6 +156,8 @@ public static class JsonSerializer {
               componentJson = JsonUtility.ToJson(createPrimWrapper((System.Boolean)obj));
             } else if (obj is System.Int32) {
               componentJson = JsonUtility.ToJson(createPrimWrapper((System.Int32)obj));
+            } else if (obj is System.UInt32) {
+              componentJson = JsonUtility.ToJson(createPrimWrapper((System.UInt32)obj));
             } else if (obj is System.String) {
               componentJson = JsonUtility.ToJson(createPrimWrapper((System.String)obj));
             } else if (obj is Rect) {
@@ -199,7 +202,7 @@ public static class JsonSerializer {
 
   //DESERIALIZE FROM A List<TransformStruct> -------------------------------------------------------------------------------
   public static List<TransformStruct> deserializeTransformHierarchy(string json) {
-    Dictionary<int, Component> referenceDictionary = new Dictionary<int, Component>();
+    Dictionary<int, UnityEngine.Object> referenceDictionary = new Dictionary<int, UnityEngine.Object>();
     PrimitiveWrapper<List<TransformStruct>> transformStructWrapper = new PrimitiveWrapper<List<TransformStruct>>();
     transformStructWrapper = JsonUtility.FromJson<PrimitiveWrapper<List<TransformStruct>>>(json);
     createTransformHierarchy(ref transformStructWrapper.value__, ref referenceDictionary);
@@ -207,7 +210,7 @@ public static class JsonSerializer {
     return transformStructWrapper.value__;
   }
 
-  static void createTransformHierarchy(ref List<TransformStruct> transforms, ref Dictionary<int, Component> referenceDictionary, int transformIndex = 0, Transform parent = null) {
+  static void createTransformHierarchy(ref List<TransformStruct> transforms, ref Dictionary<int, UnityEngine.Object> referenceDictionary, int transformIndex = 0, Transform parent = null) {
     GameObject deserializedGameObject = new GameObject(transforms[transformIndex].name);
     //Set the transform information
     deserializedGameObject.transform.parent = parent;
@@ -229,7 +232,7 @@ public static class JsonSerializer {
     }
   }
 
-  static void fillComponents(List<TransformStruct> transforms, ref Dictionary<int, Component> referenceDictionary) {
+  static void fillComponents(List<TransformStruct> transforms, ref Dictionary<int, UnityEngine.Object> referenceDictionary) {
     for (int i = 0; i < transforms.Count; i++) {
       for (int j = 0; j < transforms[i].components.Length; j++) {
         if (transforms[i].components[j].sanitizedJson != string.Empty) {
@@ -241,7 +244,7 @@ public static class JsonSerializer {
     }
   }
 
-  static void deserializeEngineComponent<T>(ref ComponentStruct component, T toFill, ref Dictionary<int, Component> referenceDictionary) where T : Component {
+  static void deserializeEngineComponent<T>(ref ComponentStruct component, T toFill, ref Dictionary<int, UnityEngine.Object> referenceDictionary) where T : UnityEngine.Object {
     //Deserialize the properties of this engine component
     for (int i = 0; i < component.enginePropertyNames.Count; i++) {
       PropertyInfo info = toFill.GetType().GetProperty(component.enginePropertyNames[i]);
@@ -253,9 +256,15 @@ public static class JsonSerializer {
             info.SetValue(toFill, JsonUtility.FromJson(fixReferences(component.enginePropertyValues[i], referenceDictionary), obj.GetType()), null);
           } catch (NullReferenceException e) {
             try {
-              Component referencedComponent;
+              UnityEngine.Object referencedComponent;
               if (referenceDictionary.TryGetValue(JsonUtility.FromJson<PrimitiveWrapper<int>>(component.enginePropertyValues[i]).value__, out referencedComponent)) {
                 info.SetValue(toFill, referencedComponent, null);
+                if (toFill is MeshFilter){// && info.Name == "sharedMesh") {
+                  Debug.Log("SHARED MESH COMPONENT: " + info.Name);/// referencedComponent.GetInstanceID());
+                  //MeshFilter filter = toFill as MeshFilter;
+                  //filter.mesh = referencedComponent as Mesh;
+                }
+                Debug.Log("MESH FILTER?: " + (toFill as Component).name);
               }
             } catch {
               Debug.LogWarning(toFill.name + "'s " + info.Name + "'s reference failed to serialize with: \n" + e, toFill);
@@ -270,6 +279,8 @@ public static class JsonSerializer {
             info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<System.Boolean>>(component.enginePropertyValues[i]).value__, null);
           } else if (obj is System.Int32) {
             info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<System.Int32>>(component.enginePropertyValues[i]).value__, null);
+          } else if (obj is System.UInt32) {
+            info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<System.UInt32>>(component.enginePropertyValues[i]).value__, null);
           } else if (obj is System.String) {
             info.SetValue(toFill, JsonUtility.FromJson<PrimitiveWrapper<System.String>>(component.enginePropertyValues[i]).value__, null);
           } else if (obj is Rect) {
@@ -288,14 +299,14 @@ public static class JsonSerializer {
     }
   }
 
-  static string fixReferences(string json, Dictionary<int, Component> referenceDictionary) {
+  static string fixReferences(string json, Dictionary<int, UnityEngine.Object> referenceDictionary) {
     //Replace the instance IDs in this string with the IDs of components from our dictionary
     //Want to match strings like: {\"instanceID\":12148
     string pattern = "{\"instanceID\":-?[0-9]+";
     return
     Regex.Replace(json, pattern, new MatchEvaluator((match) => {
       //Debug.Log("Match: " + match.Value + " at index [" + match.Index + ", " + (match.Index + match.Length) + "]");
-      Component comp;
+      UnityEngine.Object comp;
       if (referenceDictionary.TryGetValue(int.Parse(match.Value.Substring(14)), out comp)) {
         return "{\"instanceID\":" + comp.GetInstanceID();
       } else {
