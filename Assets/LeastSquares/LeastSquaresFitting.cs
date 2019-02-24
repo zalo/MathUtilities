@@ -18,7 +18,7 @@ public class LeastSquaresFitting : MonoBehaviour {
     }
 
     if (fitType == FitType.Line) {
-      Fit.Line(points, out origin, ref direction, 100, true);
+      Fit.Line(points, out origin, ref direction, 1, true);
     } else if (fitType == FitType.Plane) {
       Fit.Plane(points, out origin, out direction, 100, true);
     } else if (fitType == FitType.OrdinaryLine) {
@@ -48,8 +48,6 @@ public static class Fit {
     origin /= points.Count;
 
     // Step the optimal fitting line approximation:
-    // The new direction is the average of the centered points
-    // scaled by their projection along the normalized current direction
     for (int iter = 0; iter < iters; iter++) {
       Vector3 newDirection = Vector3.zero;
       foreach (Vector3 worldSpacePoint in points) {
@@ -61,38 +59,6 @@ public static class Fit {
 
     if (drawGizmos) {
       Gizmos.color = Color.red;
-      Gizmos.DrawRay(origin, direction * 2f);
-      Gizmos.DrawRay(origin, -direction * 2f);
-    }
-  }
-
-
-  public static void LineOld(List<Vector3> points, out Vector3 origin,
-                             ref Vector3 direction, int iters = 100, bool drawGizmos = false) {
-    if (
-    direction == Vector3.zero ||
-    float.IsNaN(direction.x) ||
-    float.IsInfinity(direction.x)) direction = Vector3.right;
-
-    //Calculate Average
-    origin = Vector3.zero;
-    for (int i = 0; i < points.Count; i++) origin += points[i];
-    origin /= points.Count;
-
-    //Step the optimal fitting line approximation
-    for (int iter = 0; iter < iters; iter++) {
-      Vector3 accumulatedOffset = Vector3.zero; float sum = 0f;
-      for (int i = 0; i < points.Count; i++) {
-        float alpha = TimeAlongSegment(points[i], origin, origin + direction);
-        Vector3 lineToPointOffset = points[i] - Vector3.LerpUnclamped(origin, origin + direction, alpha);
-        accumulatedOffset += lineToPointOffset * alpha;
-        sum += alpha * alpha;
-      }
-      direction += accumulatedOffset / sum;
-      direction = direction.normalized;
-    }
-    if (drawGizmos) {
-      Gizmos.color = Color.white;
       Gizmos.DrawRay(origin, direction * 2f);
       Gizmos.DrawRay(origin, -direction * 2f);
     }
@@ -176,5 +142,84 @@ public static class Fit {
           (coefficients[1] * x) + 
           (coefficients[2] * x * x) + 
           (coefficients[3] * x * x * x);
+  }
+
+  /// <summary>
+  /// An analytic orthogonal regression technique that unfortunately only works in 2D
+  /// https://en.wikipedia.org/wiki/Deming_regression#Orthogonal_regression
+  /// </summary>
+  public static void LineAnalyticBroken(List<Vector3> points, out Vector3 origin,
+                    ref Vector3 direction, int iters = 100, bool drawGizmos = false) {
+    if (
+    direction == Vector3.zero ||
+    float.IsNaN(direction.x) ||
+    float.IsInfinity(direction.x)) direction = Vector3.up;
+
+    //Calculate Average
+    origin = Vector3.zero;
+    for (int i = 0; i < points.Count; i++) origin += points[i];
+    origin /= points.Count;
+
+    // Attempt to solve for the fitting line analytically
+    Quaternion accum = new Quaternion(0, 0, 0, 0);
+    foreach (Vector3 worldSpacePoint in points) {
+      Vector3 point = worldSpacePoint - origin;
+      Quaternion complexPoint = new Quaternion(point.y, point.z, 0, point.x);
+      Quaternion squaredComplexPoint = (complexPoint * complexPoint);
+      accum = new Quaternion(squaredComplexPoint.x + accum.x,
+                             squaredComplexPoint.y + accum.y,
+                             0,//squaredComplexPoint.z + accum.z,
+                             squaredComplexPoint.w + accum.w);
+    }
+    accum = accum.normalized;
+    //float angle;  Vector3 axis;
+    //accum.ToAngleAxis(out angle, out axis);
+    //accum = Quaternion.AngleAxis(angle / 2, axis);
+    accum = accum.Sqrt(); // Equivalent to halving the angle
+    direction = new Vector3(accum.w, accum.x, accum.y).normalized;
+
+    if (drawGizmos) {
+      Gizmos.color = Color.green;
+      Gizmos.DrawRay(origin, direction * 2f);
+      Gizmos.DrawRay(origin, -direction * 2f);
+    }
+  }
+}
+
+// BELOW IS UNUSED EXCEPT IN BROKEN ANALYTIC LINE FUNCTION
+public static class QuaternionExponentiation {
+  /// <summary>Halves the angle of the quaternion</summary>
+  public static Quaternion Sqrt(this Quaternion q) {
+    float d = 1.0f + q.w;
+    float s = 1f/Mathf.Sqrt(d + d);
+    return new Quaternion(q.x * s, q.y * s, q.z * s, d * s);
+  }
+
+  ///<summary>
+  ///Sets this quaternion to this^n (for a rotation quaternion, 
+  ///this is equivalent to rotating this by itself n times).
+  ///This should only work for unit quaternions.
+  ///</summary>
+  public static Quaternion Pow(this Quaternion q, float n) {
+    return q.Ln().Scale(n).Exp();
+  }
+
+  public static Quaternion Exp(this Quaternion q) {
+    float r = Mathf.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z);
+    float et = Mathf.Exp(q.w);
+    float s = r >= 0.00001f ? et * Mathf.Sin(r) / r : 0f;
+    return new Quaternion(q.x * s, q.y * s, q.z * s, et * Mathf.Cos(r));
+  }
+
+
+  public static Quaternion Ln(this Quaternion q) {
+    float r = Mathf.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z);
+    float t = r > 0.00001f ? Mathf.Atan2(r, q.w) / r : 0f;
+    return new Quaternion(q.x * t, q.y * t, q.z * t,
+                          0.5f * Mathf.Log(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z));
+  }
+
+  public static Quaternion Scale(this Quaternion q, float scale) {
+    return new Quaternion(q.x * scale, q.y * scale, q.z * scale, q.w * scale);
   }
 }
