@@ -35,4 +35,13 @@ public class Pivot : MonoBehaviour {
     Ray postRay = new Ray(deltaPosition, halfRotation * halfAngleDirection);
     return Constraints.ClosestPointOnRayToRay(preRay, postRay);
   }
+
+  //Do the same as above, but with a Trig Function (the amarcolina way B-) )
+  public static Vector3 calculatePivotPointCheap(Vector3 deltaPosition, Quaternion deltaRotation) {
+    Vector3 axis; float angle; deltaRotation.ToAngleAxis(out angle, out axis); angle *= Mathf.Deg2Rad;
+    return (Mathf.Tan((Mathf.PI - angle) * 0.5f) * Vector3.Cross(axis, deltaPosition) + deltaPosition) * 0.5f;
+  }
+  public static Vector2 calculatePivotPoint2DCheap(Vector2 deltaPosition, float deltaAngle) {
+    return (Vector2)(Mathf.Tan((Mathf.PI - deltaAngle) * 0.5f) * Vector3.Cross(deltaPosition, Vector3.forward) + (Vector3)deltaPosition) * 0.5f;
+  }
 }
