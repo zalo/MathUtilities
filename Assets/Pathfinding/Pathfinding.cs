@@ -3,22 +3,27 @@ using UnityEngine;
 using UnityEngine.AI;
 
 public class Pathfinding : MonoBehaviour {
+    [Tooltip("During Play Mode, relax the euclidean distance to match the graph-distance.")]
     public bool relaxConstraints = false;
+    [Tooltip("Scale the output space.")][Range(0f, 1f)]
+    public float outputSpaceScale = 0.75f;
     NavMeshTriangulation mesh;
     HashSet<int>[] connections;
     float[,] distances;
     Vector4[] accumulatedDisplacements;
 
+    float lastTimeRefreshed = 0f;
+
     void Update() {
         // Set up the Mesh and n-squared true distance matrix
-        if (mesh.vertices == null) setUpMesh();
+        if (mesh.vertices == null) calculateDistanceMatrix();
 
+        // Do an iteration of dense constraint satisfaction
         if (relaxConstraints) {
-            // Do an iteration of dense constraint satisfaction
+            // First sum up each node's effect on each other
             for (int i = 0; i < mesh.vertices.Length - 1; i++) {
                 for (int j = i; j < mesh.vertices.Length; j++) {
-                    float sqrDistance = distances[i, j];
-                    sqrDistance *= sqrDistance;
+                    float sqrDistance = distances[i, j] * outputSpaceScale; sqrDistance *= sqrDistance;
                     if (sqrDistance > 0.0f) {
                         Vector3 offset = mesh.vertices[j] - mesh.vertices[i];
                         offset *= sqrDistance / (Vector3.Dot(offset, offset) + sqrDistance) - 0.5f;
@@ -27,41 +32,21 @@ public class Pathfinding : MonoBehaviour {
                     }
                 }
             }
+            // Then average them and apply - Jacobi style
             for (int i = 0; i < mesh.vertices.Length; i++) {
-                if (accumulatedDisplacements[i].w > 0f) {
-                    mesh.vertices[i] += new Vector3(
-                        accumulatedDisplacements[i].x,
-                        accumulatedDisplacements[i].y,
-                        accumulatedDisplacements[i].z) /
-                        accumulatedDisplacements[i].w;
-                }
-                accumulatedDisplacements[i] = new Vector4(0, 0, 0, 1.0f);
+                mesh.vertices[i] += new Vector3(
+                    accumulatedDisplacements[i].x,
+                    accumulatedDisplacements[i].y,
+                    accumulatedDisplacements[i].z) /
+                    accumulatedDisplacements[i].w;
+                    //(accumulatedDisplacements[i].w * Mathf.Max(1.0f, 25.0f - ((Time.time - lastTimeRefreshed) * 8.0f))); // Aesthetic Slow Unrolling...
+                accumulatedDisplacements[i] = Vector4.zero;
             }
         }
     }
 
-    public void OnDrawGizmos() {
-        // Set up the Mesh and n-squared true distance matrix
-        if (mesh.vertices == null) setUpMesh();
-
-        Gizmos.color = Color.yellow;
-        for (int i = 0; i < mesh.vertices.Length; i++) {
-            Gizmos.DrawSphere(mesh.vertices[i], 0.1f);
-        }
-
-        Gizmos.color = Color.green;
-        for (int i = 0; i < mesh.vertices.Length; i++) {
-            //Gizmos.color = Color.HSVToRGB((i / 5.12354536f) % 1.0f, 1.0f, 1.0f); // Useful for debugging the duplicate nodes issue
-            foreach (int connection in connections[i]) {
-                Gizmos.DrawLine(mesh.vertices[i], ((mesh.vertices[connection] - mesh.vertices[i]) * 0.5f) + mesh.vertices[i]);
-            }
-        }
-    }
-
-    public void OnValidate() { setUpMesh(); }
-
-    void setUpMesh() {
-        // Allocate space for all our datastructures
+    void calculateDistanceMatrix() {
+        // Triangulate Unity's Native NavMesh
         mesh = NavMesh.CalculateTriangulation();
 
         // Collapse Vertices!  wtf Unity giving me broken nodegraphs
@@ -80,6 +65,7 @@ public class Pathfinding : MonoBehaviour {
         }
         mesh.vertices = collapsedVertices.ToArray();
 
+        // Allocate space for all our datastructures
         connections = new HashSet<int>[mesh.vertices.Length];
         distances = new float[mesh.vertices.Length, mesh.vertices.Length];
         accumulatedDisplacements = new Vector4[mesh.vertices.Length];
@@ -100,19 +86,38 @@ public class Pathfinding : MonoBehaviour {
         }
 
         // Traverse the graph, calculate the n-squared distance matrix
-        for (int i = 0; i < mesh.vertices.Length; i++) { depthFirstTraversal(i, i, 0f); } //breadthFirstTraversal(i); }//
+        for (int i = 0; i < mesh.vertices.Length; i++) { depthFirstTraversal(i, i, 0f); }
     }
 
-    /// <summary>Depth-First Traversal of Node-Graph NOT WHAT WE WANT</summary>
+    /// <summary>Depth-First Traversal of Node-Graph; horribly inefficient, should be breadth-first</summary>
     void depthFirstTraversal(int startingNode, int currentNode, float currentDistance) {
         if (currentDistance < distances[startingNode, currentNode]) {
             distances[startingNode, currentNode] = currentDistance;
             foreach (int connection in connections[currentNode]) {
-                //Debug.Log(currentNode + " visiting " + connection);
                 if (connection != startingNode && connection != currentNode) {
-                    depthFirstTraversal(startingNode, connection, currentDistance + Vector3.Distance(mesh.vertices[currentNode], mesh.vertices[connection]));
+                    depthFirstTraversal(startingNode, connection, currentDistance + 
+                        Vector3.Distance(mesh.vertices[currentNode], mesh.vertices[connection]));
                 }
             }
         }
     }
+
+    public void OnDrawGizmos() {
+        if (mesh.vertices == null) calculateDistanceMatrix();
+
+        Gizmos.color = Color.yellow;
+        for (int i = 0; i < mesh.vertices.Length; i++) {
+            Gizmos.DrawSphere(mesh.vertices[i], 0.1f);
+        }
+
+        Gizmos.color = Color.green;
+        for (int i = 0; i < mesh.vertices.Length; i++) {
+            //Gizmos.color = Color.HSVToRGB((i / 5.12354536f) % 1.0f, 1.0f, 1.0f); // Useful for debugging the duplicate nodes issue
+            foreach (int connection in connections[i]) {
+                Gizmos.DrawLine(mesh.vertices[i], ((mesh.vertices[connection] - mesh.vertices[i]) * 0.5f) + mesh.vertices[i]);
+            }
+        }
+    }
+
+    public void OnValidate() { calculateDistanceMatrix(); lastTimeRefreshed = Time.time; }
 }

@@ -77,6 +77,6 @@ public class DrawMinkowski : MonoBehaviour {
     ComputeBuffer.CopyCount(cbPoints, cbDrawArgs, 0);
     mat.SetBuffer("pointBuffer", cbPoints);
     mat.SetPass(1);
-    Graphics.DrawProceduralIndirect(MeshTopology.Points, cbDrawArgs, 0);
+    Graphics.DrawProceduralIndirectNow(MeshTopology.Points, cbDrawArgs, 0);
   }
 }
