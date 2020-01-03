@@ -161,7 +161,7 @@ public class ConvexHull : MonoBehaviour {
 
         /// <summary> Copies this Convex Hull to a Unity Mesh object.</summary>
         public void CopyToUnityMesh(ref Mesh unityMesh) {
-            if (unityMesh == null) { unityMesh = new Mesh(); }
+            if (unityMesh == null) { unityMesh = new Mesh(); unityMesh.MarkDynamic(); }
             Vector3[] uVertices = new Vector3[vertices.Length];
             int[] uTriangles = new int[triangles.Length * 3];
             for (int i = 0; i < vertices.Length; i++) {
@@ -173,7 +173,7 @@ public class ConvexHull : MonoBehaviour {
                 uTriangles[i + 2] = triangles[i / 3].z;
             }
             unityMesh.SetVertices(uVertices); unityMesh.SetTriangles(uTriangles, 0);
-            unityMesh.RecalculateNormals();
+            unityMesh.RecalculateNormals(); unityMesh.MarkModified();
         }
 
         /// <summary>Properly clean up the Convex Hull's NativeList's.</summary>
@@ -208,7 +208,7 @@ public class ConvexHull : MonoBehaviour {
         if (filter == null || filter.sharedMesh == null) { filter = GetComponent<MeshFilter>(); filter.mesh = hullMesh; }
     }
 
-    void OnDrawGizmosSelected() {
+    void OnDrawGizmos() {
         if (points != null) {
             // Draw the vertices as yellow, the interior points as magenta, and the horizon points as cyan...
             for (int i = 0; i < points.Count; i++) {
