@@ -22,7 +22,7 @@ public class ConvexHull : MonoBehaviour {
         }
 
         /// <summary> Initialize a full Convex Hull Object.</summary>
-        public ConvexHullData(IEnumerable<Vector3> hullPoints, int maxHullVertices = int.MaxValue) {
+        public ConvexHullData(IEnumerable<Vector3> hullPoints, int maxHullVertices = 512) {
             vertices  = new NativeList<VertexData>(maxHullVertices, Allocator.Persistent);
             triangles = new NativeList<int3      >(maxHullVertices, Allocator.Persistent);
             vertices.Clear(); triangles.Clear();
@@ -256,8 +256,6 @@ public class ConvexHull : MonoBehaviour {
         }
     }
 
-    [Range(5, 300)]
-    public int maxHullVertices = 50;
     [Tooltip("This transform represents an interactive point for testing the convex hull.")]
     public    Transform      interactivePoint;
     protected ConvexHullData convexHull;
@@ -276,7 +274,7 @@ public class ConvexHull : MonoBehaviour {
 
         // Construct the convex hull
         if(convexHull.isCreated) { convexHull.Dispose(); }
-        convexHull = new ConvexHullData(points, maxHullVertices);
+        convexHull = new ConvexHullData(points);
         if (interactivePoint != null) { convexHull.GrowHull(interactivePoint.position); }
 
         // Copy the data into the Unity Mesh Representation
