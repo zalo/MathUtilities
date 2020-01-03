@@ -220,14 +220,14 @@ public class ConvexHull : MonoBehaviour {
         public static float3 getCentroid(int3 vertices, ref NativeList<VertexData> inVertices) {
             return (inVertices[vertices.x].position +
                     inVertices[vertices.y].position +
-                    inVertices[vertices.z].position) * 0.333f;
+                    inVertices[vertices.z].position) / 3f;
         }
 
         /// <summary> Get whether this triangle's front-face is showing towards a point.</summary>
         public static bool isFacingPoint(int3 triangle, float3 point, ref NativeList<VertexData> vertices) {
             return math.dot(point - getCentroid(triangle, ref vertices),
                 math.cross(vertices[triangle.y].position - vertices[triangle.x].position,
-                           vertices[triangle.z].position - vertices[triangle.x].position)) >= float.Epsilon;
+                           vertices[triangle.z].position - vertices[triangle.x].position)) > 0f;
         }
 
         /// <summary> Copies this Convex Hull to a Unity Mesh object.</summary>
