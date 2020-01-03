@@ -133,7 +133,6 @@ public class ConvexHull : MonoBehaviour {
                 for (int i = 0; i < horizonVerts.Count; i++) {
                     triangles.Add(new int3(horizonVerts[i].index, horizonVerts[(i + 1) % horizonVerts.Count].index, vertices.Length - 1));
                 }
-                new ResetFacingJob() { vertices = vertices }.Run();
                 Profiler.EndSample();
             }
             Profiler.EndSample();
