@@ -281,7 +281,7 @@ public class ConvexHull : MonoBehaviour {
         if (filter == null || filter.sharedMesh == null) { filter = GetComponent<MeshFilter>(); filter.mesh = hullMesh; }
     }
 
-    void OnDrawGizmos() {
+    void OnDrawGizmosSelected() {
         if (points != null) {
             // Draw the vertices as yellow and the interior points as magenta
             Gizmos.color = Color.magenta;
