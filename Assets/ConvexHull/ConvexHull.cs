@@ -243,8 +243,8 @@ public class ConvexHull : MonoBehaviour {
                 uTriangles[i + 2] = triangles[i / 3].z;
             }
             unityMesh.Clear();
-            unityMesh.SetVertices(uVertices); unityMesh.SetTriangles(uTriangles, 0);
-            unityMesh.RecalculateNormals(); unityMesh.MarkModified();
+            unityMesh.vertices = uVertices; unityMesh.SetTriangles(uTriangles, 0);
+            unityMesh.RecalculateNormals(); //unityMesh.MarkModified();
         }
 
         /// <summary>Properly clean up the Convex Hull's NativeList's.</summary>
