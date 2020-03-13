@@ -133,6 +133,11 @@ Inspired by this paper: https://april.eecs.umich.edu/media/pdfs/olson2006icra.pd
 What appears to be a unique geometric solution for calculating the pivot point of a rigid transformation in 2D and 3D (where applicable).  Is computationally efficient, geometrically intuitive, and can be extended to arbitrary dimensions.
 
 
+### [Weighted Average Smoothing Spline](https://github.com/zalo/MathUtilities/tree/master/Assets/WeightedAverage) [[Gif]](https://i.imgur.com/NgNkZJ2.gif)
+
+An example demonstrating how using a sliding window weighted average can yield a continuous smoothing spline for noisy 6 DoF data.
+
+
 ### [Thick Tesellated Plane Generator](https://github.com/zalo/MathUtilities/tree/master/Assets/ThickPlane)
 Useful for generating solid meshes that are essentially deformed planes (shapes that are common in free-form optics).
 
