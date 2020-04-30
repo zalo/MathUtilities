@@ -3,12 +3,18 @@
 [ExecuteInEditMode]
 public class MirrorSystem : MonoBehaviour {
 
+    const int MAX_REFLECTORS = 16;
+
+    public Transform ellipsoids;
+
     int         reflectors = 1;
-    Matrix4x4[] ellipseWorldToLocal = new Matrix4x4[16];
-    Matrix4x4[] ellipseLocalToWorld = new Matrix4x4[16];
-    float    [] minorAxes           = new float    [16];
-    float    [] majorAxes           = new float    [16];
-    float    [] isInside            = new float[16];
+    Matrix4x4[] ellipseWorldToLocal = new Matrix4x4[MAX_REFLECTORS];
+    Matrix4x4[] ellipseLocalToWorld = new Matrix4x4[MAX_REFLECTORS];
+    float    [] minorAxes           = new float    [MAX_REFLECTORS];
+    float    [] majorAxes           = new float    [MAX_REFLECTORS];
+    float    [] isInside            = new float    [MAX_REFLECTORS];
+    Vector4  [] boundsMin           = new Vector4  [MAX_REFLECTORS];
+    Vector4  [] boundsMax           = new Vector4  [MAX_REFLECTORS];
 
     Material  reflectorShader;
 
@@ -20,37 +26,22 @@ public class MirrorSystem : MonoBehaviour {
     void Update() {
         if(reflectorShader == null) reflectorShader = GetComponent<Renderer>().sharedMaterial;
 
+#if UNITY_EDITOR
+        UnityEditor.Tools.hidden = false;
+#endif
+
         reflectors = 0;
-        foreach(Transform ellipsoid in transform) {
-            if (!ellipsoid.gameObject.activeInHierarchy) continue;
+        foreach(Transform ell in ellipsoids) {
+            if (!ell.gameObject.activeInHierarchy) continue;
 
-            Transform focus1 = ellipsoid.GetChild(0), 
-                      focus2 = ellipsoid.GetChild(1);
-
-            focus1.parent = null;
-            focus2.parent = null;
-
-            ellipsoid.position = (focus1.position + focus2.position) * 0.5f;
-            ellipsoid.rotation = Quaternion.LookRotation(focus2.position - focus1.position);
-            ellipsoid.localScale = new Vector3(ellipsoid.localScale.x, ellipsoid.localScale.x, 
-                                               Mathf.Sqrt(Mathf.Pow(Vector3.Distance(focus1.position, 
-                                                                                     focus2.position) / 2, 2) + 
-                                                          Mathf.Pow(minorAxes[reflectors]             / 2, 2)) * 2);
-
-            ellipseLocalToWorld[reflectors] = Matrix4x4.TRS(ellipsoid.position, ellipsoid.rotation, ellipsoid.localScale);
-            ellipseWorldToLocal[reflectors] = ellipseLocalToWorld[reflectors].inverse;
-            minorAxes[reflectors]           = ellipsoid.localScale.x;
-            majorAxes[reflectors]           = ellipsoid.localScale.z;
-            isInside [reflectors]           = -1f; // -1 is exterior reflection, 1 is interior reflection
-
-            focus1.parent = ellipsoid;
-            focus2.parent = ellipsoid;
-            Vector3 invScale = new Vector3(
-                1f / ellipsoid.localScale.x, 
-                1f / ellipsoid.localScale.y, 
-                1f / ellipsoid.localScale.z);
-            focus1.localScale = Vector3.Scale(Vector3.one * 0.02f, invScale);
-            focus2.localScale = Vector3.Scale(Vector3.one * 0.02f, invScale);
+            Ellipsoid ellipsoid = ell.GetComponent<Ellipsoid>();
+            ellipseLocalToWorld[reflectors] = ellipsoid.localToWorld;
+            ellipseWorldToLocal[reflectors] = ellipsoid.worldToLocal;
+            minorAxes[reflectors]           = ellipsoid.minorAxis;
+            majorAxes[reflectors]           = ellipsoid.majorAxis;
+            isInside [reflectors]           = ellipsoid.isInside ? 1f : -1f; // -1 is exterior reflection, 1 is interior reflection
+            boundsMin[reflectors]           = ellipsoid.intersectionBounds.min;
+            boundsMax[reflectors]           = ellipsoid.intersectionBounds.max;
 
             reflectors++;
         }
@@ -61,5 +52,7 @@ public class MirrorSystem : MonoBehaviour {
         reflectorShader.SetFloatArray ("_MajorAxes",      majorAxes);
         reflectorShader.SetFloatArray ("_MinorAxes",      minorAxes);
         reflectorShader.SetFloatArray ("_IsInsides",      isInside);
+        reflectorShader.SetVectorArray("_BoundsMin",      boundsMin);
+        reflectorShader.SetVectorArray("_BoundsMax",      boundsMax);
     }
 }

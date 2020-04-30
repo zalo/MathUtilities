@@ -32,6 +32,8 @@
             uniform float     _MajorAxes     [16];
             uniform float     _MinorAxes     [16];
             uniform float     _IsInsides     [16];
+            uniform float4    _BoundsMin     [16];
+            uniform float4    _BoundsMax     [16];
             uniform sampler2D _CameraDepthTexture;
 
             struct v2f {
@@ -119,8 +121,11 @@
                             _sphereToWorlds[i], _IsInsides[i], _MinorAxes[i], _MajorAxes[i],
                             tempOrigin, worldNormal);
 
+                        int isInsideBounds = tempOrigin.x > _BoundsMin[i].x && tempOrigin.y > _BoundsMin[i].y && tempOrigin.z > _BoundsMin[i].z &&
+                                             tempOrigin.x < _BoundsMax[i].x && tempOrigin.y < _BoundsMax[i].y && tempOrigin.z < _BoundsMax[i].z;
+
                         // Check if this is the closest intersection
-                        if (t < leastT && t > 0.0) {
+                        if (t < leastT && t > 0.0 && isInsideBounds) {
                             hitThisBounce = 1;
                             leastT        = t;
                             bestOrigin    = tempOrigin;
