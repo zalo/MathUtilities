@@ -6,6 +6,10 @@ public class MirrorSystem : MonoBehaviour {
     const int MAX_REFLECTORS = 16;
 
     public Transform ellipsoids;
+    [Range(0.0f, 0.02f)]
+    public float apertureSize = 0.007f;
+    [Range(0.0f, 2f)]
+    public float focalDistance = 0.2f;
 
     int         reflectors = 1;
     Matrix4x4[] ellipseWorldToLocal = new Matrix4x4[MAX_REFLECTORS];
@@ -46,7 +50,9 @@ public class MirrorSystem : MonoBehaviour {
             reflectors++;
         }
 
-        reflectorShader.SetFloat      ("_Reflectors",     reflectors);
+        reflectorShader.SetInt        ("_Reflectors",     reflectors);
+        reflectorShader.SetFloat      ("_FocalDistance",  focalDistance);
+        reflectorShader.SetFloat      ("_ApertureSize",   apertureSize);
         reflectorShader.SetMatrixArray("_worldToSpheres", ellipseWorldToLocal);
         reflectorShader.SetMatrixArray("_sphereToWorlds", ellipseLocalToWorld);
         reflectorShader.SetFloatArray ("_MajorAxes",      majorAxes);

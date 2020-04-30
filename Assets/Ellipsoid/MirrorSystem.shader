@@ -27,6 +27,8 @@
             };
 
             uniform int       _Reflectors;
+            uniform float     _FocalDistance = 0.2;
+            uniform float     _ApertureSize  = 0.01;
             uniform float4x4  _worldToSpheres[16];
             uniform float4x4  _sphereToWorlds[16];
             uniform float     _MajorAxes     [16];
@@ -99,21 +101,16 @@
                 return t == 1000 ? 1000 : sign(dot(offset, rd)) * length(offset);
             }
 
-            fixed4 frag (v2f i) : SV_Target {
-                //Initialize the ray for this fragment
+            int castRayAgainstSystem(float3 rayOrigin, inout float3 rayDirection, out float3 firstHit) {
                 int hit = 0;
-                float3 rayOrigin    = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos, 1.0)); // The ray's starting point
-                float3 rayDirection = normalize(-i.viewDir);                                       // The ray's direction
-                float3 firstHit     = rayOrigin;
-                
                 // Use as many bounces as reflectors for the bare minimum backpropagation
-                for (int _bounce = 0; _bounce < _Reflectors; _bounce++) {
+                for (int _bounce = 0; _bounce < 10; _bounce++) {
                     // Intersect the pixel ray against the array of ellipsoidal reflectors
-                    float  leastT        = 1000; 
-                    float3 bestOrigin    = rayOrigin; 
-                    float3 bestDirection = rayDirection; 
+                    float  leastT = 1000;
+                    float3 bestOrigin = rayOrigin;
+                    float3 bestDirection = rayDirection;
                     int    hitThisBounce = 0;
-                    for(int i = 0; i < _Reflectors; i++){
+                    for (int i = 0; i < _Reflectors; i++) {
 
                         // Intersect Ray against Ellipsoid
                         float3 tempOrigin, worldNormal;
@@ -127,32 +124,58 @@
                         // Check if this is the closest intersection
                         if (t < leastT && t > 0.0 && isInsideBounds) {
                             hitThisBounce = 1;
-                            leastT        = t;
-                            bestOrigin    = tempOrigin;
+                            leastT = t;
+                            bestOrigin = tempOrigin;
                             bestDirection = reflect(rayDirection, worldNormal);
                         }
                     }
-                    
+
                     // Save First Hit for Depth Testing
-                    if (!hit && hitThisBounce) { hit = 1; firstHit = bestOrigin; } 
+                    if (!hit && hitThisBounce) { hit = 1; firstHit = bestOrigin; }
                     // Take the min-distance ray and use it for the next bounce
-                    if (hitThisBounce) { 
-                        rayOrigin    = bestOrigin; 
-                        rayDirection = bestDirection; 
-                    } else{ break; } // Don't bother bouncing this ray if it didn't hit anything
+                    if (hitThisBounce) {
+                        rayOrigin = bestOrigin;
+                        rayDirection = bestDirection;
+                    } else { break; } // Don't bother bouncing this ray if it didn't hit anything
+                }
+                return hit;
+            }
+
+            fixed4 frag (v2f i) : SV_Target {
+                //Initialize the ray for this fragment
+                float3 rayOrigin    = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos, 1.0)); // The ray's starting point
+                float3 rayDirection = normalize(-i.viewDir);                                       // The ray's direction
+                float3 firstHit     = rayOrigin;
+
+                float3 tempDir = rayDirection;
+                float4 accumulatedColor = float4(0, 0, 0, 0);
+                float  sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos))), partZ = 0;
+
+                // Only do extra work if the primary ray hits an ellipsoid
+                if((castRayAgainstSystem(rayOrigin, tempDir, firstHit)) && (sceneZ > ComputeScreenPos(UnityObjectToClipPos(firstHit)).w)) {
+                    // Find the position of the ray on the focal plane
+                    float3 cameraForward = dot(rayDirection, mul((float3x3)unity_CameraToWorld, float3(0, 0, 1)));
+                    float3 focalPlane = rayOrigin + ((rayDirection / cameraForward) * _FocalDistance);
+
+                    // Offset the rayOrigin across the aperture, accumulating rays across the aperture
+                    float3 ogOrigin         = rayOrigin; float apertureStep = _ApertureSize / 4;
+                    float3 cameraRight      = mul((float3x3)unity_CameraToWorld, float3(1, 0, 0)) * apertureStep;
+                    float3 cameraUp         = mul((float3x3)unity_CameraToWorld, float3(0, 1, 0)) * apertureStep;
+                    for (int lr = -2; lr <= 2; lr++) {  //int lr = 0, ud = 0;
+                        for (int ud = -2; ud <= 2; ud++) {
+                            float3 curOrig = ogOrigin + (lr * cameraRight) + (ud * cameraUp);
+                            float3 outDir = normalize(focalPlane - curOrig);
+                            int hit = castRayAgainstSystem(curOrig, outDir, firstHit);
+
+                            // Use the ray to Sample the Skybox; We'll eventually add more interesting things here I hope...
+                            accumulatedColor += float4(DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, outDir, 0), unity_SpecCube0_HDR), 1.0);
+                        }
+                    }
                 }
 
-                // Use the ray to Sample the Skybox
-                // We'll eventually add more interesting things here I hope...
-                half3 skyColor = DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, rayDirection, 0), unity_SpecCube0_HDR);
-
-                // Calculate whether this fragment is occluded by the depth buffer
-                float  sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
-                float  partZ  = ComputeScreenPos(UnityObjectToClipPos(firstHit)).w;
-
                 // Return the color
-                if (hit && sceneZ > partZ){
-                    return fixed4(skyColor, 1.0);
+                if (accumulatedColor.a > 0){
+                    return accumulatedColor / accumulatedColor.a;
                 } else {
                     return fixed4(1.0, 1.0, 1.0, 0.0);
                 }
