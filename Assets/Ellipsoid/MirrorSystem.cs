@@ -8,8 +8,8 @@ public class MirrorSystem : MonoBehaviour {
     public Transform ellipsoids;
     [Range(0.0f, 0.02f)]
     public float apertureSize = 0.007f;
-    [Range(0.0f, 2f)]
-    public float focalDistance = 0.2f;
+    [Range(0.1f, 2f)]
+    public float focalDistance = 0.05f;
 
     int         reflectors = 1;
     Matrix4x4[] ellipseWorldToLocal = new Matrix4x4[MAX_REFLECTORS];
@@ -19,6 +19,11 @@ public class MirrorSystem : MonoBehaviour {
     float    [] isInside            = new float    [MAX_REFLECTORS];
     Vector4  [] boundsMin           = new Vector4  [MAX_REFLECTORS];
     Vector4  [] boundsMax           = new Vector4  [MAX_REFLECTORS];
+
+    public Transform quads;
+    int planes = 1;
+    Matrix4x4[] quadLocalToWorld    = new Matrix4x4[MAX_REFLECTORS];
+    Matrix4x4[] quadWorldToLocal    = new Matrix4x4[MAX_REFLECTORS];
 
     Material  reflectorShader;
 
@@ -50,6 +55,16 @@ public class MirrorSystem : MonoBehaviour {
             reflectors++;
         }
 
+        planes = 0;
+        foreach (Transform quad in quads) {
+            if (!quad.gameObject.activeInHierarchy) continue;
+
+            quadLocalToWorld[planes] = Matrix4x4.TRS(quad.position, quad.rotation, quad.localScale);
+            quadWorldToLocal[planes] = quadLocalToWorld[planes].inverse;
+
+            planes++;
+        }
+
         reflectorShader.SetInt        ("_Reflectors",     reflectors);
         reflectorShader.SetFloat      ("_FocalDistance",  focalDistance);
         reflectorShader.SetFloat      ("_ApertureSize",   apertureSize);
@@ -60,5 +75,9 @@ public class MirrorSystem : MonoBehaviour {
         reflectorShader.SetFloatArray ("_IsInsides",      isInside);
         reflectorShader.SetVectorArray("_BoundsMin",      boundsMin);
         reflectorShader.SetVectorArray("_BoundsMax",      boundsMax);
+
+        reflectorShader.SetInt        ("_Planes",         planes);
+        reflectorShader.SetMatrixArray("_planeToWorlds",  quadLocalToWorld);
+        reflectorShader.SetMatrixArray("_worldToPlanes",  quadWorldToLocal);
     }
 }

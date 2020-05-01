@@ -1,6 +1,8 @@
 ﻿Shader "Unlit/MirrorSystem"
 {
-    Properties { }
+    Properties { 
+        _MainTex("Texture", 2D) = "white" {}
+    }
     SubShader
     {
         Tags { "Queue" = "Transparent" "RenderType" = "Transparent" "IgnoreProjector" = "True" }
@@ -26,6 +28,9 @@
               float3 normal : NORMAL;
             };
 
+            sampler2D _MainTex;
+            float4 _MainTex_ST;
+
             uniform int       _Reflectors;
             uniform float     _FocalDistance = 0.2;
             uniform float     _ApertureSize  = 0.01;
@@ -36,6 +41,11 @@
             uniform float     _IsInsides     [16];
             uniform float4    _BoundsMin     [16];
             uniform float4    _BoundsMax     [16];
+
+            uniform int       _Planes;
+            uniform float4x4  _planeToWorlds [16];
+            uniform float4x4  _worldToPlanes [16];
+
             uniform sampler2D _CameraDepthTexture;
 
             struct v2f {
@@ -101,7 +111,7 @@
                 return t == 1000 ? 1000 : sign(dot(offset, rd)) * length(offset);
             }
 
-            int castRayAgainstSystem(float3 rayOrigin, inout float3 rayDirection, out float3 firstHit) {
+            int castRayAgainstSystem(inout float3 rayOrigin, inout float3 rayDirection, out float3 firstHit) {
                 int hit = 0;
                 // Use as many bounces as reflectors for the bare minimum backpropagation
                 for (int _bounce = 0; _bounce < 10; _bounce++) {
@@ -134,11 +144,37 @@
                     if (!hit && hitThisBounce) { hit = 1; firstHit = bestOrigin; }
                     // Take the min-distance ray and use it for the next bounce
                     if (hitThisBounce) {
-                        rayOrigin = bestOrigin;
+                        rayOrigin    = bestOrigin;
                         rayDirection = bestDirection;
                     } else { break; } // Don't bother bouncing this ray if it didn't hit anything
                 }
                 return hit;
+            }
+
+            float4 castRayAgainstQuads(float3 rayOrigin, float3 rayDirection) {
+                // Transform ray origin and dir to sphere local space
+                float  leastT = 1000;
+                float3 bestHit = rayOrigin;
+                for(int q = 0; q < _Planes; q++) {
+                    float3 localStart =           mul(_worldToPlanes[q], float4(rayOrigin,    1));
+                    float3 localDirec = normalize(mul(_worldToPlanes[q], float4(rayDirection, 0)));
+
+                    float  t          = (localStart.z / -localDirec.z);
+                    float3 planeHit   =  localStart +  (localDirec * t);
+
+
+                    if (localStart.z < 0 && localDirec.z > 0 && t < leastT &&
+                        planeHit.x < 0.5 && planeHit.x > -0.5 && 
+                        planeHit.y < 0.5 && planeHit.y > -0.5) {
+                        leastT = t; bestHit = planeHit;
+                    }
+                }
+
+                if (leastT < 1000) {
+                    return tex2D(_MainTex, float2(bestHit.x + 0.5, bestHit.y + 0.5));
+                } else {
+                    return float4(DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, rayDirection, 0), unity_SpecCube0_HDR), 1.0);
+                }
             }
 
             fixed4 frag (v2f i) : SV_Target {
@@ -147,15 +183,15 @@
                 float3 rayDirection = normalize(-i.viewDir);                                       // The ray's direction
                 float3 firstHit     = rayOrigin;
 
-                float3 tempDir = rayDirection;
+                float3 tempDir = rayDirection; float3 tempOrigin = rayOrigin;
                 float4 accumulatedColor = float4(0, 0, 0, 0);
                 float  sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos))), partZ = 0;
 
                 // Only do extra work if the primary ray hits an ellipsoid
-                if((castRayAgainstSystem(rayOrigin, tempDir, firstHit)) && (sceneZ > ComputeScreenPos(UnityObjectToClipPos(firstHit)).w)) {
+                if((castRayAgainstSystem(tempOrigin, tempDir, firstHit)) && (sceneZ > ComputeScreenPos(UnityObjectToClipPos(firstHit)).w)) {
                     // Find the position of the ray on the focal plane
-                    float3 cameraForward = dot(rayDirection, mul((float3x3)unity_CameraToWorld, float3(0, 0, 1)));
-                    float3 focalPlane = rayOrigin + ((rayDirection / cameraForward) * _FocalDistance);
+                    float3 cameraForward    = dot(rayDirection, mul((float3x3)unity_CameraToWorld, float3(0, 0, 1)));
+                    float3 focalPlane       = rayOrigin + ((rayDirection / cameraForward) * _FocalDistance);
 
                     // Offset the rayOrigin across the aperture, accumulating rays across the aperture
                     float3 ogOrigin         = rayOrigin; float apertureStep = _ApertureSize / 4;
@@ -168,7 +204,9 @@
                             int hit = castRayAgainstSystem(curOrig, outDir, firstHit);
 
                             // Use the ray to Sample the Skybox; We'll eventually add more interesting things here I hope...
-                            accumulatedColor += float4(DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, outDir, 0), unity_SpecCube0_HDR), 1.0);
+                            if (hit) {
+                                accumulatedColor += castRayAgainstQuads(curOrig, outDir);
+                            }
                         }
                     }
                 }
