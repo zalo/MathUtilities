@@ -122,20 +122,29 @@
                     int    hitThisBounce = 0;
                     for (int i = 0; i < _Reflectors; i++) {
 
-                        // Intersect Ray against Ellipsoid
+                        // Intersect Ray against the outside of the Ellipsoid
                         float3 tempOrigin, worldNormal;
                         float t = intersectRayEllipsoid(rayOrigin, rayDirection, _worldToSpheres[i],
-                            _sphereToWorlds[i], _IsInsides[i], _MinorAxes[i], _MajorAxes[i],
+                            _sphereToWorlds[i], -1.0, _MinorAxes[i], _MajorAxes[i], //_IsInsides[i]
                             tempOrigin, worldNormal);
 
                         int isInsideBounds = tempOrigin.x > _BoundsMin[i].x && tempOrigin.y > _BoundsMin[i].y && tempOrigin.z > _BoundsMin[i].z &&
                                              tempOrigin.x < _BoundsMax[i].x && tempOrigin.y < _BoundsMax[i].y && tempOrigin.z < _BoundsMax[i].z;
 
+                        if (!isInsideBounds) {
+                            t = intersectRayEllipsoid(rayOrigin, rayDirection, _worldToSpheres[i],
+                                _sphereToWorlds[i], 1.0, _MinorAxes[i], _MajorAxes[i], //_IsInsides[i]
+                                tempOrigin, worldNormal);
+
+                            isInsideBounds = tempOrigin.x > _BoundsMin[i].x && tempOrigin.y > _BoundsMin[i].y && tempOrigin.z > _BoundsMin[i].z &&
+                                             tempOrigin.x < _BoundsMax[i].x && tempOrigin.y < _BoundsMax[i].y && tempOrigin.z < _BoundsMax[i].z;
+                        }
+
                         // Check if this is the closest intersection
                         if (t < leastT && t > 0.0 && isInsideBounds) {
                             hitThisBounce = 1;
-                            leastT = t;
-                            bestOrigin = tempOrigin;
+                            leastT = (t - 0.0000001);//t;
+                            bestOrigin = rayOrigin + (rayDirection * (t - 0.000001));//tempOrigin;
                             bestDirection = reflect(rayDirection, worldNormal);
                         }
                     }
@@ -171,7 +180,9 @@
                 }
 
                 if (leastT < 1000) {
-                    return tex2D(_MainTex, float2(bestHit.x + 0.5, bestHit.y + 0.5));
+                    float2 Pos = floor(bestHit.xy * 25.0);
+                    float PatternMask = fmod(Pos.x + 200 + fmod(Pos.y, 2), 2);
+                    return float4(PatternMask, PatternMask, PatternMask, 1);//tex2D(_MainTex, TRANSFORM_TEX(float2(bestHit.x + 0.5, bestHit.y + 0.5), _MainTex));
                 } else {
                     return float4(DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, rayDirection, 0), unity_SpecCube0_HDR), 1.0);
                 }

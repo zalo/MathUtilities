@@ -1009,7 +1009,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ellipsoids: {fileID: 1018499708}
   apertureSize: 0.007
-  focalDistance: 1
+  focalDistance: 0.5
   quads: {fileID: 1060145838}
 --- !u!23 &1381655163
 MeshRenderer:

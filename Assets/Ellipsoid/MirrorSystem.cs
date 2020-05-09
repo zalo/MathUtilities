@@ -8,7 +8,7 @@ public class MirrorSystem : MonoBehaviour {
     public Transform ellipsoids;
     [Range(0.0f, 0.02f)]
     public float apertureSize = 0.007f;
-    [Range(0.1f, 2f)]
+    [Range(0.2f, 0.75f)]
     public float focalDistance = 0.05f;
 
     int         reflectors = 1;
