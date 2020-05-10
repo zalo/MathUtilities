@@ -146,9 +146,9 @@ TextMesh:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 807890389}
-  m_Text: "Sample the closest point \nvia the Binary Space Partition Tree\n\nRed is
-    Naive, White is BSP\n\nIt turns out that BSPs aren't directly\nusable for closest
-    point samples, so\nthe answer is highly approximate"
+  m_Text: "Sample the closest point \nvia the Binary Space Partition Tree\n\nBSPs
+    require backtracking to sample\nnearest neighbors, so they only achieve\na modest
+    performance enhancement"
   m_OffsetZ: 0
   m_CharacterSize: 0.03
   m_LineSpacing: 1
@@ -249,7 +249,7 @@ Light:
   m_CookieSize: 10
   m_Shadows:
     m_Type: 2
-    m_Resolution: -1
+    m_Resolution: 3
     m_CustomResolution: -1
     m_Strength: 1
     m_Bias: 0.05
@@ -331,7 +331,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1506367121}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.0804, y: 0.3424, z: -0.0558}
+  m_LocalPosition: {x: -0.1245, y: 0.3295, z: -0.1913}
   m_LocalScale: {x: 0.007, y: 0.007, z: 0.007}
   m_Children: []
   m_Father: {fileID: 1886007513}
@@ -495,7 +495,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e5a9a43b9e35894aa69d64922ba5854, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  drawNaiveClosestPoint: 1
+  drawNaiveClosestPoint: 0
   model: {fileID: 2834078683169255423}
   probe: {fileID: 1506367122}
 --- !u!4 &1886007513

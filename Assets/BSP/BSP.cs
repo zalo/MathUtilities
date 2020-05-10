@@ -6,8 +6,6 @@ using UnityEngine.Profiling;
 public class BSP : MonoBehaviour {
   public bool drawNaiveClosestPoint = false;
 
-
-
   public MeshFilter model;
   public Transform probe;
 
@@ -77,20 +75,39 @@ public class BSP : MonoBehaviour {
     // The outputs: splittingPlanes, leafTriangleIndices, sortedTriangles
   }
 
-  /// <summary> Look Up the starting SortedTriangle index and TriangleCount in the BSP Tree </summary> 
-  static Vector2Int QueryBSPTriangles(Vector4[] splittingPlanes, Vector2Int[] leafTriangleIndices, Vector3 point) {
-    int index = QueryBSPLeaf(splittingPlanes, point);
-    //Debug.Log(index);
-    return leafTriangleIndices[index];
+  /// <summary> Look Up which leaf index the point falls under </summary> 
+  Vector3 QueryClosestTriangleRecursive(Vector3 point, ref Vector3 minPos, ref float minDist, int index = 0) {
+    if(index < splittingPlanes.Length) {
+      // We're in a branch node, so try both paths if it makes sense
+      float distance = Vector3.Dot(splittingPlanes[index], point);
+      float distanceToSplittingPlane = Mathf.Abs(distance - splittingPlanes[index].w);
+
+      int moreLikelyBranch = (index * 2) + ((distance > splittingPlanes[index].w) ? 1 : 2);
+      int lessLikelyBranch = (index * 2) + ((distance > splittingPlanes[index].w) ? 2 : 1);
+
+                                              QueryClosestTriangleRecursive(point, ref minPos, ref minDist, moreLikelyBranch);
+      if (minDist > distanceToSplittingPlane) QueryClosestTriangleRecursive(point, ref minPos, ref minDist, lessLikelyBranch);
+    } else {
+      // We're in a leaf, so iterate like chumps
+      Vector2Int triangles = leafTriangleIndices[index - splittingPlanes.Length];
+      for (int i = triangles.x; i < triangles.x + triangles.y; i++) {
+        Vector3 trianglePoint = Constraints.ConstrainToTriangle(point,
+            meshVertices[sortedTriangles[i].x],
+            meshVertices[sortedTriangles[i].y],
+            meshVertices[sortedTriangles[i].z]);
+        float dist1 = Vector3.Distance(point, trianglePoint);
+        if (dist1 < minDist) { minDist = dist1; minPos = trianglePoint; }
+      }
+    }
+    return minPos;
   }
 
   /// <summary> Look Up which leaf index the point falls under </summary> 
   static int QueryBSPLeaf(Vector4[] splittingPlanes, Vector3 point) {
     int index = 0;
     while (index < splittingPlanes.Length) {
-      bool up = (Vector3.Dot(splittingPlanes[index], point) > splittingPlanes[index].w);
-      //Debug.Log(up);
-      index = (2 * index) + (up ? 1 : 2);
+      float distance = Vector3.Dot(splittingPlanes[index], point);
+      index = (2 * index) + ((distance > splittingPlanes[index].w) ? 1 : 2);
     }
     return index - splittingPlanes.Length;
   }
@@ -103,7 +120,7 @@ public class BSP : MonoBehaviour {
 
     // Recurse only until the tree is filled up
     if ((2 * index) + 1 < splittingPlanes.Length) {
-      ConstructPartition(splittingPlanes, upPoints, (2 * index) + 1);
+      ConstructPartition(splittingPlanes,   upPoints, (2 * index) + 1);
       ConstructPartition(splittingPlanes, downPoints, (2 * index) + 2);
     }
   }
@@ -124,7 +141,7 @@ public class BSP : MonoBehaviour {
     if (upPoints != null && downPoints != null) {
       foreach (Vector3 point in points) {
         if (Vector3.Dot(planeNormal, point) > planeDepth) {
-          upPoints.Add(point);
+          upPoints  .Add(point);
         } else {
           downPoints.Add(point);
         }
@@ -164,24 +181,12 @@ public class BSP : MonoBehaviour {
         Profiler.EndSample();
       }
 
-      float minDistFast = 1000f; Vector3 minPosFast = Vector3.one; Vector3Int triFast = Vector3Int.zero;
       Profiler.BeginSample("BSP Closest Point on Mesh");
-      Vector2Int closestTriangles = QueryBSPTriangles(splittingPlanes, leafTriangleIndices, queryPoint);
-      for(int i = closestTriangles.x; i < closestTriangles.x + closestTriangles.y; i++) {
-          Vector3 trianglePoint = Constraints.ConstrainToTriangle(queryPoint,
-              meshVertices[sortedTriangles[i].x],
-              meshVertices[sortedTriangles[i].y],
-              meshVertices[sortedTriangles[i].z]);
-          float dist1 = Vector3.Distance(queryPoint, trianglePoint);
-          if (dist1 < minDistFast) { minDistFast = dist1; minPosFast = trianglePoint; triFast = sortedTriangles[i]; }
-      }
       Gizmos.color = Color.white;
-      Gizmos.DrawLine(queryPoint, minPosFast);
-
-      Gizmos.DrawSphere(minPosFast, 0.005f);
-      Gizmos.DrawSphere(meshVertices[triFast.x], 0.0025f);
-      Gizmos.DrawSphere(meshVertices[triFast.y], 0.0025f);
-      Gizmos.DrawSphere(meshVertices[triFast.z], 0.0025f);
+      Vector3 minPoss = Vector3.zero; float minDists = 100000f;
+      QueryClosestTriangleRecursive(queryPoint, ref minPoss, ref minDists);
+      Gizmos.DrawLine(queryPoint, minPoss);
+      Gizmos.DrawSphere(minPoss, 0.005f);
       Profiler.EndSample();
     }
   }
