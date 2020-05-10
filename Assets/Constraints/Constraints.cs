@@ -153,7 +153,7 @@ public static class Constraints {
      sign(Vector3.Dot(Vector3.Cross(a - c, normal), position - c)) < 2);
     if (!outsidePlaneBounds) {
       //Project onto plane
-      return Vector3.ProjectOnPlane(position, normal);
+      return Vector3.ProjectOnPlane(position - a, normal) + a;
     } else {
       //Constrain to edges
       Vector3 edge1 = position.ConstrainToSegment(a, b);
