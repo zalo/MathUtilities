@@ -169,7 +169,7 @@ public class BSP {
       // Calculate squared distance of farthest point's 
       // projection onto the plane to the average
       Vector3 planePoint = new Plane(planeNormal, pointAverage).ClosestPointOnPlane(point);
-      float dist         = Vector3.SqrMagnitude(pointAverage - point);
+      float dist         = Vector3.SqrMagnitude(planePoint - point);
       maxSqDist          = Mathf.Max(maxSqDist, dist);
 
       // Split Points into up and down lists depending 
