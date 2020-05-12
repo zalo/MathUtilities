@@ -7,58 +7,24 @@ using UnityEngine.Profiling;
 using g3;
 #endif
 
-public class BSP : MonoBehaviour {
-  public bool drawNaiveClosestPoint = false;
-
-  public MeshFilter model;
-  public Transform probe;
-
-  Mesh mesh;
-  Vector3[] meshVertices;
-  int[] meshTriangles;
-
-  // GPU Friendly Representation of the BSP Tree
-  SplittingDisk[] splittingDisks;
-  Vector2Int   [] leafTriangleIndices;
-  Vector3Int   [] sortedTriangles;
-
-#if G3_USING_UNITY
-  DMeshAABBTree3 g3MeshTree;
-#endif
-
+public class BSP {
+  public SplittingDisk[] splittingDisks;
+  public Vector2Int   [] leafTriangleIndices;
+  public Vector3Int   [] sortedTriangles;
+  public List<Vector3>   vertices;
   public struct SplittingDisk {
     public Vector4 plane;
     public Vector3 average;
     public float sqRadius;
   }
 
-  void Start() {
-    if (model != null) {
-      mesh = model.sharedMesh;
-      meshVertices = mesh.vertices;
-      meshTriangles = mesh.triangles;
-      for (int i = 0; i < meshVertices.Length; i++) meshVertices[i] = model.transform.TransformPoint(meshVertices[i]);
-      ConstructBSP(mesh, 14);
-
-#if G3_USING_UNITY
-      DMesh3Builder dMeshBuilder = new DMesh3Builder();
-      dMeshBuilder.AppendNewMesh(false, false, false, false);
-      foreach (Vector3 vertex in meshVertices)       dMeshBuilder.AppendVertex(vertex.x, vertex.y, vertex.z);
-      for(int i = 0; i < meshTriangles.Length; i+=3) dMeshBuilder.AppendTriangle(meshTriangles[i], meshTriangles[i+1], meshTriangles[i+2]);
-      g3MeshTree = new DMeshAABBTree3(dMeshBuilder.Meshes[0]);
-      g3MeshTree.Build();
-#endif
-    }
-  }
-
-  void ConstructBSP(Mesh mesh, int levels) {
+  public BSP(Mesh mesh, int levels) {
     // Stage 1: Construct the BSP
 
     // There will be 2^(levels)-1 splitting planes
     splittingDisks = new SplittingDisk[(int)Math.Pow(2, levels) - 1];
-    List<Vector3> vertices = new List<Vector3>();
-    mesh.GetVertices(vertices);
-    for (int i = 0; i < vertices.Count; i++) vertices[i] = model.transform.TransformPoint(vertices[i]);
+    vertices = new List<Vector3>();  mesh.GetVertices(vertices);
+    //for (int i = 0; i < vertices.Count; i++) vertices[i] = model.transform.TransformPoint(vertices[i]);
     ConstructPartition(splittingDisks, vertices);
 
 
@@ -89,6 +55,8 @@ public class BSP : MonoBehaviour {
       if (vertex3Leaf != vertex2Leaf && vertex3Leaf != vertex1Leaf) sortedTrianglesList[vertex3Leaf].Add(triangle);
     }
 
+    // Stage 3: Flatten the elements for easy access
+
     // Concatenate these into a single fixed-size array
     List<Vector3Int> flatTrianglesList = new List<Vector3Int>();
     for (int i = 0; i < sortedTrianglesList.Length; i++) {
@@ -99,11 +67,10 @@ public class BSP : MonoBehaviour {
 
     // The outputs: splittingPlanes, leafTriangleIndices, sortedTriangles
   }
-
   /// <summary> Look Up which leaf index the point falls under </summary> 
-  Vector3 QueryClosestTriangleRecursive(Vector3 point, ref Vector3 minPos, ref float minSqDist, int index = 0) {
+  public Vector3 QueryClosestPointRecursive(Vector3 point, ref Vector3 minPos, ref float minSqDist, int index = 0) {
     if (index < splittingDisks.Length) {
-      Profiler.BeginSample("Explore Node", this);
+      Profiler.BeginSample("Explore Node");
 
       // We're in a branch node, so try both paths if it makes sense
       float planeDist = Vector3.Dot(splittingDisks[index].plane, point) - splittingDisks[index].plane.w;
@@ -112,7 +79,7 @@ public class BSP : MonoBehaviour {
       // Calculate approximate squared distance to disk 
       // (closest point would be more accurate if this were more accurate...)
       Vector3 pointToPlane = point + (Vector3)(splittingDisks[index].plane * planeDist);
-      float   curDistance  = Vector3.SqrMagnitude(splittingDisks[index].average - pointToPlane);
+      float curDistance = Vector3.SqrMagnitude(splittingDisks[index].average - pointToPlane);
       Vector3 pointToDisk = pointToPlane;
       if (curDistance >= splittingDisks[index].sqRadius) pointToDisk = Constraints.FastConstrainDistance(pointToDisk, splittingDisks[index].average, splittingDisks[index].sqRadius);
       float distanceToSplittingDiskSqrd = Vector3.SqrMagnitude(point - pointToDisk);
@@ -120,11 +87,11 @@ public class BSP : MonoBehaviour {
       int moreLikelyBranch = (index * 2) + (upSide ? 1 : 2);
       int lessLikelyBranch = (index * 2) + (upSide ? 2 : 1);
 
-      Profiler.EndSample(); 
-                                                   QueryClosestTriangleRecursive(point, ref minPos, ref minSqDist, moreLikelyBranch);
-      if (minSqDist > distanceToSplittingDiskSqrd) QueryClosestTriangleRecursive(point, ref minPos, ref minSqDist, lessLikelyBranch);
+      Profiler.EndSample();
+                                                   QueryClosestPointRecursive(point, ref minPos, ref minSqDist, moreLikelyBranch);
+      if (minSqDist > distanceToSplittingDiskSqrd) QueryClosestPointRecursive(point, ref minPos, ref minSqDist, lessLikelyBranch);
     } else {
-      Profiler.BeginSample("Calculate Leaf Distance", this);
+      Profiler.BeginSample("Calculate Leaf Distance");
       // We're in a leaf, so iterate like chumps
       Vector2Int triangles = leafTriangleIndices[index - splittingDisks.Length];
       for (int i = triangles.x; i < triangles.x + triangles.y; i++) {
@@ -133,28 +100,28 @@ public class BSP : MonoBehaviour {
         // floating-point points and vertices
         float dist1 = MeshQueries.TriDistanceSqr(
             point,
-            meshVertices[sortedTriangles[i].x],
-            meshVertices[sortedTriangles[i].y],
-            meshVertices[sortedTriangles[i].z]);
+            vertices[sortedTriangles[i].x],
+            vertices[sortedTriangles[i].y],
+            vertices[sortedTriangles[i].z]);
 #else
-        Profiler.BeginSample("Calculate Squared Triangle Distance", this);
+        Profiler.BeginSample("Calculate Squared Triangle Distance");
         Vector3 trianglePoint = Constraints.ConstrainToTriangle(
             point,
-            meshVertices[sortedTriangles[i].x],
-            meshVertices[sortedTriangles[i].y],
-            meshVertices[sortedTriangles[i].z]);
-        float dist1 = Vector3.SqrMagnitude(point-trianglePoint);
+            vertices[sortedTriangles[i].x],
+            vertices[sortedTriangles[i].y],
+            vertices[sortedTriangles[i].z]);
+        float dist1 = Vector3.SqrMagnitude(point - trianglePoint);
         Profiler.EndSample();
 #endif
 
-        if (dist1 < minSqDist) { 
+        if (dist1 < minSqDist) {
           minSqDist = dist1;
-          Profiler.BeginSample("Calculate Final Triangle Distance", this);
+          Profiler.BeginSample("Calculate Final Triangle Distance");
           minPos = Constraints.ConstrainToTriangle(
             point,
-            meshVertices[sortedTriangles[i].x],
-            meshVertices[sortedTriangles[i].y],
-            meshVertices[sortedTriangles[i].z]);
+            vertices[sortedTriangles[i].x],
+            vertices[sortedTriangles[i].y],
+            vertices[sortedTriangles[i].z]);
           Profiler.EndSample();
         }
       }
@@ -181,14 +148,14 @@ public class BSP : MonoBehaviour {
 
     // Recurse only until the tree is filled up
     if ((2 * index) + 1 < splittingPlanes.Length) {
-      ConstructPartition(splittingPlanes,   upPoints, (2 * index) + 1);
+      ConstructPartition(splittingPlanes, upPoints, (2 * index) + 1);
       ConstructPartition(splittingPlanes, downPoints, (2 * index) + 2);
     }
   }
 
   /// <summary> Split the points by the optimal dividing plane </summary> 
   static SplittingDisk GetSplittingPlane(List<Vector3> points,
-      List<Vector3> upPoints = null, List<Vector3> downPoints = null) {
+      List<Vector3> upPoints, List<Vector3> downPoints) {
     Vector3 pointAverage, planeNormal = Vector3.up;
 
     // Fit a line through the average of the points
@@ -197,82 +164,24 @@ public class BSP : MonoBehaviour {
     planeNormal = planeNormal.normalized;
     float planeDepth = Vector3.Dot(planeNormal, pointAverage);
 
-    // Calculate squared distance of farthest point's 
-    // projection onto the plane to the average
     float maxSqDist = 0f;
-    foreach(Vector3 point in points) {
+    foreach (Vector3 point in points) {
+      // Calculate squared distance of farthest point's 
+      // projection onto the plane to the average
       Vector3 planePoint = new Plane(planeNormal, pointAverage).ClosestPointOnPlane(point);
-      float dist = Vector3.SqrMagnitude(pointAverage - point);
-      maxSqDist = Mathf.Max(maxSqDist, dist);
-    }
+      float dist         = Vector3.SqrMagnitude(pointAverage - point);
+      maxSqDist          = Mathf.Max(maxSqDist, dist);
 
-    // Split Points into up and down lists depending 
-    // on which side of the plane they're on
-    if (upPoints != null && downPoints != null) {
-      foreach (Vector3 point in points) {
-        if (Vector3.Dot(planeNormal, point) > planeDepth) {
-          upPoints  .Add(point);
-        } else {
-          downPoints.Add(point);
-        }
+      // Split Points into up and down lists depending 
+      // on which side of the plane they're on
+      if (Vector3.Dot(planeNormal, point) > planeDepth) {
+        upPoints  .Add(point);
+      } else {
+        downPoints.Add(point);
       }
     }
 
     // Return Splitting Disk
     return new SplittingDisk() { plane = new Vector4(planeNormal.x, planeNormal.y, planeNormal.z, planeDepth), average = pointAverage, sqRadius = maxSqDist };
-  }
-
-  private void OnDrawGizmos() {
-    if (splittingDisks == null) Start();
-
-    // Draw a line between the probe and the closest triangle vertex via the BSP...
-    if (leafTriangleIndices != null && leafTriangleIndices.Length > 0) {
-      Vector3 queryPoint = probe.position;
-      float minDist = 1000f; Vector3 minPos = Vector3.one; Vector3Int tri = Vector3Int.zero;
-
-      if (drawNaiveClosestPoint) {
-        Profiler.BeginSample("Naive Closest Point on Mesh");
-        minDist = 1000f;
-        for (int i = 0; i < sortedTriangles.Length; i++) {
-          Vector3 trianglePoint = Constraints.ConstrainToTriangle(queryPoint,
-              meshVertices[sortedTriangles[i].x],
-              meshVertices[sortedTriangles[i].y],
-              meshVertices[sortedTriangles[i].z]);
-          float dist1 = Vector3.Distance(queryPoint, trianglePoint);
-          if (dist1 < minDist) { minDist = dist1; minPos = trianglePoint; tri = sortedTriangles[i]; }
-        }
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(queryPoint, minPos);
-        Gizmos.DrawSphere(minPos, 0.005f);
-        Gizmos.DrawSphere(meshVertices[tri.x], 0.0025f);
-        Gizmos.DrawSphere(meshVertices[tri.y], 0.0025f);
-        Gizmos.DrawSphere(meshVertices[tri.z], 0.0025f);
-
-        Profiler.EndSample();
-      }
-
-      Profiler.BeginSample("BSP Closest Point on Mesh", this);
-      Gizmos.color = Color.white;
-      Vector3 minPoss = Vector3.zero; float minDists = 100000f;
-      QueryClosestTriangleRecursive(queryPoint, ref minPoss, ref minDists);
-      Gizmos.DrawLine(queryPoint, minPoss);
-      Gizmos.DrawSphere(minPoss, 0.005f);
-      Profiler.EndSample();
-
-#if G3_USING_UNITY
-      if (g3MeshTree != null && g3MeshTree.IsValid) {
-        Profiler.BeginSample("D3 Closest Point on Mesh", this);
-        Gizmos.color = Color.magenta;
-        int nearestTri = g3MeshTree.FindNearestTriangle(new g3.Vector3d(queryPoint.x, queryPoint.y, queryPoint.z));
-        Vector3 trianglePointt = Constraints.ConstrainToTriangle(queryPoint,
-            meshVertices[meshTriangles[(nearestTri*3)  ]],
-            meshVertices[meshTriangles[(nearestTri*3)+1]],
-            meshVertices[meshTriangles[(nearestTri*3)+2]]);
-        Gizmos.DrawLine(queryPoint, trianglePointt);
-        Gizmos.DrawSphere(trianglePointt, 0.005f);
-        Profiler.EndSample();
-      }
-#endif
-    }
   }
 }
