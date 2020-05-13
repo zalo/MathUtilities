@@ -40,19 +40,65 @@ public class BoundingSphere : MonoBehaviour {
         Debug.Log("SPHERE DOESN'T BOUND, POINT IS OUT BY: "+ (Vector3.Distance(point, (Vector3)boundingSphere) - boundingSphere.w));
       }
     }
+    //Debug.Log("Continuous Radius: " + boundingSphere.w + ", Original Radius: " + findMaximumSphere(randomPoints, false).w);
   }
 
-  public static Vector4 findMaximumSphere(List<Vector3> points) {
-    // First find maximum bounding box for points and get an approximate sphere
-    Bounds boundingBox = new Bounds(points[0], Vector3.zero);
-    foreach (Vector3 point in points) boundingBox.Encapsulate(point);
-    Vector4 curSphere = new Vector4(
-      boundingBox.center.x, boundingBox.center.y, boundingBox.center.z, 
-      Mathf.Max(boundingBox.extents.x, 
-        Mathf.Max(boundingBox.extents.y, 
-                    boundingBox.extents.z)));
-
+  /// <summary>Returns an approximate bounding sphere around these points.</summary>
+  public static Vector4 findMaximumSphere(List<Vector3> points, bool continuous = true) {
     // Implement https://www.researchgate.net/publication/242453691_An_Efficient_Bounding_Sphere
+
+    /// First find an approximate sphere
+    Vector4 curSphere = Vector4.zero;
+    if (!continuous) {
+      // This is the original method, it's not continuous
+      /* FIRST PASS: find 6 minima/maxima points */
+      Vector3 xmin = Vector3.zero, xmax = Vector3.zero,
+              ymin = Vector3.zero, ymax = Vector3.zero,
+              zmin = Vector3.zero, zmax = Vector3.zero;
+      xmin.x = ymin.y = zmin.z = float.PositiveInfinity; /* initialize for min/max compare */
+      xmax.x = ymax.y = zmax.z = float.NegativeInfinity;
+      foreach (Vector3 point in points) {
+        /* his ith point. */
+        if (point.x < xmin.x) xmin = point; /* New xminimum point */
+        if (point.x > xmax.x) xmax = point;
+        if (point.y < ymin.y) ymin = point;
+        if (point.y > ymax.y) ymax = point;
+        if (point.z < zmin.z) zmin = point;
+        if (point.z > zmax.z) zmax = point;
+      }
+      /* Set xspan = distance between the 2 points xmin & xmax (squared) */
+      float xspan = Vector3.SqrMagnitude(xmax - xmin);
+
+      /* Same for y & z spans */
+      float yspan = Vector3.SqrMagnitude(ymax - ymin);
+      float zspan = Vector3.SqrMagnitude(zmax - zmin);
+
+      /* Set points dia1 & dia2 to the maximally separated pair */
+      Vector3 dia1 = xmin, dia2 = xmax; /* assume xspan biggest */
+      float maxspan = xspan;
+      if (yspan > maxspan) {
+        maxspan = yspan;
+        dia1 = ymin; dia2 = ymax;
+      }
+      if (zspan > maxspan) {
+        dia1 = zmin; dia2 = zmax;
+      }
+
+      Vector3 cen = (dia1 + dia2) * 0.5f;
+      curSphere = new Vector4(cen.x, cen.y, cen.z, Vector3.Distance(dia2, cen));
+    } else {
+      // This is my hacked together method, it is continuous
+      // But points that don't lie on the surface of the bounding 
+      // sphere can change its center and radius...
+      Bounds boundingBox = new Bounds(points[0], Vector3.zero);
+      foreach (Vector3 point in points) boundingBox.Encapsulate(point);
+      curSphere = new Vector4(
+        boundingBox.center.x, boundingBox.center.y, boundingBox.center.z, 
+        Mathf.Max(boundingBox.extents.x, 
+          Mathf.Max(boundingBox.extents.y, 
+                      boundingBox.extents.z)));
+    }
+
     // Make Radius into Squared Radius
     float radiusSq = curSphere.w * curSphere.w;
 
@@ -78,7 +124,7 @@ public class BoundingSphere : MonoBehaviour {
     }
 
     // A bit of floating-point leighway
-    curSphere.w *= 1.0000001f;
+    curSphere.w *= 1.000001f;
 
     return curSphere;
   }
