@@ -201,6 +201,7 @@ public class SoftbodyJobified : MonoBehaviour {
     public NativeArray<Vector3Int> bodyTriangles;
     public NativeArray<Vector3> bodyNormals;
     public void Execute() {//int i) {
+      for (int i = 0; i < bodyNormals.Length; i++) bodyNormals[i] = Vector3.zero;
       for (int i = 0; i < bodyTriangles.Length; i++) {
         Vector3 normal = Vector3.Cross(bodyVerts[bodyTriangles[i].x] - bodyVerts[bodyTriangles[i].y],
                                        bodyVerts[bodyTriangles[i].x] - bodyVerts[bodyTriangles[i].z]) * 0.5f * 0.3333333f;
@@ -256,7 +257,7 @@ public class SoftbodyJobified : MonoBehaviour {
                                 bodyVerts[vertexConnections[i].triangle6.x] - bodyVerts[vertexConnections[i].triangle6.z]) * 0.5f * 0.3333333f;
       }
 
-      //bodyNormals[i] = normal / normal.magnitude;
+      bodyNormals[i] = normal;// / normal.magnitude;
     }
   }
 
@@ -450,13 +451,13 @@ public class SoftbodyJobified : MonoBehaviour {
 
     //Transform the points into world space
     JobHandle localToWorldHandle = new ToWorldSpaceJob() {
-      localToWorld = transform.localToWorldMatrix,
+      localToWorld = Matrix4x4.TRS(transform.position, transform.rotation, transform.lossyScale),
       bodyVerts = softbodyData.bodyVerts
     }.Schedule(originalVerts.Length, batchSize);
 
     //Physics - Verlet Integration
     JobHandle verletHandle = new VerletIntegrateJob() {
-      bodyVerts = softbodyData.bodyVerts,
+      bodyVerts     = softbodyData.bodyVerts,
       prevBodyVerts = softbodyData.prevBodyVerts,
       scaledGravity = softbodyData.scaledGravity
     }.Schedule(originalVerts.Length, batchSize, dependsOn: localToWorldHandle);
@@ -606,7 +607,7 @@ public class SoftbodyJobified : MonoBehaviour {
       bodyVerts = softbodyData.bodyVerts,
       bodyNormals = softbodyData.bodyNormals,
       renderNormals = softbodyData.renderNormals,
-      worldToLocal = transform.worldToLocalMatrix
+      worldToLocal = toWorldSpace.inverse//transform.worldToLocalMatrix
     }.Schedule(originalVerts.Length, batchSize);
     toLocalHandle.Complete();
 
