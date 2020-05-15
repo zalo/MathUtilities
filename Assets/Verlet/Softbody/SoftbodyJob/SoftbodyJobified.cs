@@ -139,9 +139,10 @@ public class SoftbodyJobified : MonoBehaviour {
   public struct VerletIntegrateJob : IJobParallelFor {
     public NativeArray<Vector3> bodyVerts, prevBodyVerts;
     public Vector3 scaledGravity;
+    public float sqTimestep;
     public void Execute(int i) {
       Vector3 tempPos = bodyVerts[i];
-      bodyVerts[i] += (bodyVerts[i] - prevBodyVerts[i]) + (scaledGravity / 3600f);
+      bodyVerts[i] += (bodyVerts[i] - prevBodyVerts[i]) + (scaledGravity * sqTimestep);
       prevBodyVerts[i] = tempPos;
     }
   }
@@ -257,7 +258,7 @@ public class SoftbodyJobified : MonoBehaviour {
                                 bodyVerts[vertexConnections[i].triangle6.x] - bodyVerts[vertexConnections[i].triangle6.z]) * 0.5f * 0.3333333f;
       }
 
-      bodyNormals[i] = normal;// / normal.magnitude;
+      bodyNormals[i] = normal / normal.magnitude;
     }
   }
 
@@ -287,7 +288,7 @@ public class SoftbodyJobified : MonoBehaviour {
     [ReadOnly]
     public NativeArray<float> triangleVolumes, triangleSurfaceAreas;
     [ReadOnly]
-    public float initialVolume, initialSurfaceArea;
+    public float initialVolume, initialSurfaceArea, inflation;
     [WriteOnly]
     public NativeArray<float> dilationDistance;
     public void Execute() {
@@ -298,7 +299,7 @@ public class SoftbodyJobified : MonoBehaviour {
 
       //And the distance we have to dilate each vert to acheive the desired volume...
       float deltaVolume = initialVolume - curVolume;
-      deltaVolume = (/*explosionResistance &&*/ curVolume > initialVolume * 2f) ? 0f : deltaVolume; //Explosion resistance
+      deltaVolume = (/*explosionResistance &&*/ curVolume > (initialVolume*inflation) * 2f) ? 0f : deltaVolume; //Explosion resistance
       if (deltaVolume > 0 || /*equality*/ true) {
         float curSurfaceArea = 0f;
         for (int i = 0; i < triangleSurfaceAreas.Length; i++) curSurfaceArea += triangleSurfaceAreas[i];
@@ -355,7 +356,10 @@ public class SoftbodyJobified : MonoBehaviour {
     public NativeArray<Vector3> preCollisionVerts;
     public void Execute(int i) {
       preCollisionVerts[i] = bodyVerts[i];
-      raycasts[i] = new RaycastCommand(bodyVerts[i] - (bodyNormals[i] * penetrationDepth), bodyNormals[i], penetrationDepth);
+      Vector3 rayOrigin = prevBodyVerts[i] - (bodyNormals[i] * penetrationDepth);
+      Vector3 rayDir = (bodyVerts[i] - rayOrigin);
+      float rayMagnitude = rayDir.magnitude;
+      raycasts[i] = new RaycastCommand(rayOrigin, rayDir/rayMagnitude, rayMagnitude); //bodyNormals[i]
     }
   }
 
@@ -374,8 +378,8 @@ public class SoftbodyJobified : MonoBehaviour {
     public void Execute(int i) {
       if (raycastHits[i].distance != 0f) {
         if (Vector3.Dot(bodyVerts[i] - raycastHits[i].point, raycastHits[i].normal) < 0f) {
-          bodyVerts[i] = projectToPlane(bodyVerts[i] - raycastHits[i].point, raycastHits[i].normal) + raycastHits[i].point;
-          bodyVerts[i] -= projectToPlane(bodyVerts[i] - prevBodyVerts[i], raycastHits[i].normal) * friction;
+          bodyVerts[i]  = projectToPlane(bodyVerts[i] - raycastHits[i].point, raycastHits[i].normal) + raycastHits[i].point;
+          bodyVerts[i] -= projectToPlane(bodyVerts[i] -     prevBodyVerts[i], raycastHits[i].normal) * friction;
         }
       }
     }
@@ -457,9 +461,10 @@ public class SoftbodyJobified : MonoBehaviour {
 
     //Physics - Verlet Integration
     JobHandle verletHandle = new VerletIntegrateJob() {
-      bodyVerts     = softbodyData.bodyVerts,
+      bodyVerts = softbodyData.bodyVerts,
       prevBodyVerts = softbodyData.prevBodyVerts,
-      scaledGravity = softbodyData.scaledGravity
+      scaledGravity = softbodyData.scaledGravity,
+      sqTimestep = Time.fixedDeltaTime * Time.fixedDeltaTime
     }.Schedule(originalVerts.Length, batchSize, dependsOn: localToWorldHandle);
 
     JobHandle previousHandle = verletHandle;
@@ -489,7 +494,7 @@ public class SoftbodyJobified : MonoBehaviour {
       }
 
       //Next, set the volume of the soft body
-      JobHandle calculateNormals;
+      JobHandle calculateNormals, normalizeNormals;
       if (parallelNormals) {
         calculateNormals = new GatherNormalsJob() {
           bodyVerts = softbodyData.bodyVerts,
@@ -503,6 +508,10 @@ public class SoftbodyJobified : MonoBehaviour {
           bodyNormals = softbodyData.bodyNormals
         }.Schedule(dependsOn: applyConstraints);
       }
+      normalizeNormals = new NormalizeNormalsJob() {
+        bodyNormals = softbodyData.bodyNormals
+      }.Schedule(originalVerts.Length, batchSize, dependsOn: calculateNormals);
+
 
       JobHandle calculateDilationDistance;
       JobHandle accumulateDilationDistance = new AccumulateSurfaceAreaAndVolumeJob() {
@@ -510,7 +519,7 @@ public class SoftbodyJobified : MonoBehaviour {
         bodyTriangles = softbodyData.bodyTriangles,
         triangleVolumes = softbodyData.triangleVolumes,
         triangleSurfaceAreas = softbodyData.triangleSurfaceAreas
-      }.Schedule(softbodyData.bodyTriangles.Length, batchSize, dependsOn: calculateNormals);
+      }.Schedule(softbodyData.bodyTriangles.Length, batchSize, dependsOn: normalizeNormals);
 
       //THIS IS THE LAST BIG ONE
       calculateDilationDistance = new CalculateSurfaceAreaAndVolumeJob() {
@@ -518,21 +527,25 @@ public class SoftbodyJobified : MonoBehaviour {
         triangleSurfaceAreas = softbodyData.triangleSurfaceAreas,
         initialVolume = softbodyData.initialVolume * inflationAmount,
         initialSurfaceArea = softbodyData.initialSurfaceArea,
-        dilationDistance = softbodyData.dilationDistance
+        dilationDistance = softbodyData.dilationDistance,
+        inflation = inflationAmount
       }.Schedule(dependsOn: accumulateDilationDistance);
 
-      previousHandle = new ExtrudeNormalsJob() {
+      JobHandle extrudeNormalsHandle = new ExtrudeNormalsJob() {
         bodyVerts = softbodyData.bodyVerts,
         bodyNormals = softbodyData.bodyNormals,
         dilationDistance = softbodyData.dilationDistance
       }.Schedule(originalVerts.Length, batchSize, dependsOn: calculateDilationDistance);
-    }
 
-    //if (!parallelNormals) {
-    previousHandle = new NormalizeNormalsJob() {
-      bodyNormals = softbodyData.bodyNormals
-    }.Schedule(originalVerts.Length, batchSize, dependsOn: previousHandle);
-    //}
+      //Apply the results of those raycasts
+      previousHandle = new RaycastCollisionJob() {
+        bodyVerts     = softbodyData.bodyVerts,
+        prevBodyVerts = softbodyData.bodyVerts,
+        raycastHits   = softbodyData.raycastHits,
+        bodyNormals   = softbodyData.bodyNormals,
+        friction      = softbodyData.friction
+      }.Schedule(originalVerts.Length, batchSize, dependsOn: extrudeNormalsHandle);
+    }
 
     //Also collide with other softbodies
     if (collideWithOtherSoftbodies) {
@@ -580,13 +593,17 @@ public class SoftbodyJobified : MonoBehaviour {
     //Calculate the impulses on PhysX objects
     float invDT = 1 / Time.deltaTime; float vertexMass = (mass / softbodyData.bodyVerts.Length);
     for (int i = 0; i < softbodyData.raycastHits.Length; i++) {
-      Rigidbody collidingBody;
+      Rigidbody collidingBody; //ArticulationBody collidingBody2;
       if ((collidingBody = softbodyData.raycastHits[i].rigidbody) != null && !collidingBody.isKinematic) {
         Vector3 preCollisionVelocity = (softbodyData.preCollisionVerts[i] - softbodyData.prevBodyVerts[i]) * invDT;
         Vector3 postCollisionVelocity = (softbodyData.bodyVerts[i] - softbodyData.prevBodyVerts[i]) * invDT;
         Vector3 deltaMomentum = (postCollisionVelocity - preCollisionVelocity) * vertexMass;
         Vector3 netForce = -deltaMomentum * invDT;
         collidingBody.AddForceAtPosition(netForce, softbodyData.bodyVerts[i], ForceMode.Force);
+        //if ((collidingBody2 = softbodyData.raycastHits[i].collider.GetComponent<ArticulationBody>()) != null) {
+        //  //Debug.Log(softbodyData.raycastHits[i].rigidbody.mass);
+        //  collidingBody2.AddForceAtPosition(netForce, softbodyData.bodyVerts[i]);
+        //}
       }
     }
 
@@ -656,7 +673,7 @@ public class SoftbodyJobified : MonoBehaviour {
     public Verlet.DistConstraint c1, c2, c3, c4, c5, c6;
     int numValid;
     public bool Contains(int containsThis) {
-      if(containsThis == c1.index2 ||
+      if (containsThis == c1.index2 ||
          containsThis == c2.index2 ||
          containsThis == c3.index2 ||
          containsThis == c4.index2 ||
