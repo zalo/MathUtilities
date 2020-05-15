@@ -19,7 +19,7 @@ public class Torus : MonoBehaviour {
   }
 
   //UNTESTED ABOVE 3 DIMENSIONS - CURSE YOU, DIMENSIONALITY!!
-  float[] encodeToNTorus(float[] value, float radiusReductionFactor = 1f) {
+  public static float[] encodeToNTorus(float[] value, float radiusReductionFactor = 1f) {
     float[] torusMapping = new float[value.Length + 1];
 
     //Sweeping creates a unit circle on the xy-plane
@@ -42,7 +42,7 @@ public class Torus : MonoBehaviour {
     return torusMapping;
   }
 
-  Vector3 encodeToThreeTorus(float value1, float value2) {
+  public static Vector3 encodeToThreeTorus(float value1, float value2) {
     //Sweeping creates a unit circle on the xy-plane
     Vector3 torusPoint1 = new Vector3(Mathf.Sin(value1), Mathf.Cos(value1), 0f);
 
