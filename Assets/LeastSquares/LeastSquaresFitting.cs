@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public class LeastSquaresFitting : MonoBehaviour {
   public Transform parentTransform;
 
-  public enum FitType { Line, Plane, OrdinaryLine, OrdinaryParabola, OrdinaryCubic };
+  public enum FitType { Line, LineFast, Plane, OrdinaryLine, OrdinaryParabola, OrdinaryCubic };
   [Tooltip("Performs a plane fit when checked and a line fit when unchecked")]
   public FitType fitType = FitType.Line;
 
@@ -19,6 +19,8 @@ public class LeastSquaresFitting : MonoBehaviour {
 
     if (fitType == FitType.Line) {
       Fit.Line(points, out origin, ref direction, 1, true);
+    } else if (fitType == FitType.LineFast) {
+      Fit.LineFast(points, out origin, ref direction, 1, true);
     } else if (fitType == FitType.Plane) {
       Fit.Plane(points, out origin, out direction, 100, true);
     } else if (fitType == FitType.OrdinaryLine) {
@@ -60,6 +62,47 @@ public static class Fit {
     if (drawGizmos) {
       Gizmos.color = Color.red;
       Gizmos.DrawRay(origin, direction * 2f);
+      Gizmos.DrawRay(origin, -direction * 2f);
+    }
+  }
+
+  public static void LineFast(List<Vector3> points, out Vector3 origin,
+                          ref Vector3 direction, int iters = 10, bool drawGizmos = false) {
+    if (
+    direction == Vector3.zero ||
+    float.IsNaN(direction.x) ||
+    float.IsInfinity(direction.x)) direction = Vector3.up;
+
+    //Mean Center the Points
+    origin = Vector3.zero;
+    for (int i = 0; i < points.Count; i++) origin += points[i];
+    origin /= points.Count;
+    for (int i = 0; i < points.Count; i++) points[i] -= origin;
+
+    // Calculate the 3x3 Cross Covariance Matrix:
+    Vector3[] crossCovariance = new Vector3[3];
+    foreach(Vector3 p in points) {
+      crossCovariance[0][0] += p[0] * p[0];
+      crossCovariance[1][0] += p[1] * p[0];
+      crossCovariance[2][0] += p[2] * p[0];
+      crossCovariance[0][1] += p[0] * p[1];
+      crossCovariance[1][1] += p[1] * p[1];
+      crossCovariance[2][1] += p[2] * p[1];
+      crossCovariance[0][2] += p[0] * p[2];
+      crossCovariance[1][2] += p[1] * p[2];
+      crossCovariance[2][2] += p[2] * p[2];
+    }
+
+    // Step the optimal fitting line approximation with Power Iteration:
+    for (int iter = 0; iter < iters; iter++) {
+      Vector3 newDirection = Vector3.zero;
+      foreach (Vector3 basis in crossCovariance) newDirection += Vector3.Dot(direction, basis) * basis;
+      direction = newDirection.normalized;
+    }
+
+    if (drawGizmos) {
+      Gizmos.color = Color.green;
+      Gizmos.DrawRay(origin,  direction * 2f);
       Gizmos.DrawRay(origin, -direction * 2f);
     }
   }
