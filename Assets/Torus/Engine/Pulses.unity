@@ -477,7 +477,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f4c416096d2a8541925a936d858273b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sphere: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+  sphere: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
   wireMaterial: {fileID: 2100000, guid: 89de6518b083a854f8cea0d922b7a725, type: 2}
   fieldMaterial: {fileID: 2100000, guid: a07089d5416dcb84c842c93306e57b30, type: 2}
   speed: 0.1

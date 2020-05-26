@@ -3,9 +3,9 @@
     {
       //_MainTex         ("Texture",                            3D) = "white" {}
       _AlphaExponent   ("Alpha Exponent",     Range(0.5,     10)) = 2
-      _RangeScalar     ("Range Scalar",       Range(0.001, 0.01)) = 0.015
-      _ColorRangeOffset("Color Range Offset", Range(0.0,  500.0)) = 20.0
-      _AlphaRangeOffset("Alpha Range Offset", Range(0.0,  500.0)) = 20.0
+      _RangeScalar     ("Range Scalar",       Range(0.001, 0.1)) = 0.015
+      _ColorRangeOffset("Color Range Offset", Range(0.0,  100.0)) = 20.0
+      _AlphaRangeOffset("Alpha Range Offset", Range(0.0,  100.0)) = 20.0
     }
         SubShader{
           Tags { "Queue" = "Transparent" "RenderType" = "Transparent" "IgnoreProjector" = "True" }
@@ -41,18 +41,20 @@
           }
 
           float3 fieldAroundWire(float3 p, float3 a, float3 b, float current) {
-              //float distances = 0.1-sdCapsule(p, a, b, 0);
-              //return max(0.0, distances)*5.0;
+              float3 IdL   = (b - a) * current;                 // Current * WireLength
+              float3 R     = (b + a) * 0.5;                     // Midpoint of the Wire
+              float rNorm  = length(p - R);                     // Distance from Midpoint to Sample
+              float3 r3    = (p - R) / (rNorm * rNorm * rNorm); // Normalize Offset from Midpoint to Sample by cube of magnitude
+              float3 field = cross(IdL, r3);                    // Cross the (Current*Length) with r3
 
-              float3 IdL  = (b - a) * current;                 // Current * WireLength
-              float3 R    = (b + a) * 0.5;                     // Midpoint of the Wire
+              //float3 wireDir  = normalize(b - a);
+              //float3 fieldDir = normalize(cross(wireDir, p - ((b + a) * 0.5)));
+              //float dot1 = dot(normalize(p - a),  wireDir);  // This is based on some random website
+              //float dot2 = dot(normalize(p - b), -wireDir);  // Not sure which is the right way of doing it
+              //float fieldIntensity = dot1 + dot2;            // Am very confused
+              //float3 field = fieldDir * current * fieldIntensity;    // * fieldIntensity * fieldIntensity ?
 
-              //float dot1 = dot(normalize(p - a), normalize(IdL));
-              //float dot2 = dot(normalize(p - b), -normalize(IdL));
-
-              float rNorm = length(p - R);                     // Distance from Midpoint to Sample
-              float3 r3 = (p - R) / (rNorm * rNorm * rNorm);// * (dot1 + dot2);// ; // Normalize Offset from Midpoint to Sample by cube of magnitude
-              return cross(IdL, r3);                          // Cross the (Current*Length) with r3
+              return field;
           }
 
           float3 fieldAtPosition(float3 p) {
