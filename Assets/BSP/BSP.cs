@@ -88,6 +88,16 @@ public class BSP {
       int lessLikelyBranch = (index * 2) + (upSide ? 2 : 1);
 
       Profiler.EndSample();
+
+#if UNITY_EDITOR
+      // Draw the splitting planes we've visited
+      if ((Vector3)splittingDisks[index].plane != Vector3.zero) {
+        BSPTest.visitedDisks.Add(Matrix4x4.TRS(
+              splittingDisks[index].average,
+              Quaternion.LookRotation(splittingDisks[index].plane),
+              new Vector3(1f, 1f, 0.0001f) * Mathf.Sqrt(splittingDisks[index].sqRadius)));
+      }
+#endif
                                                    QueryClosestPointRecursive(point, ref minPos, ref minSqDist, moreLikelyBranch);
       if (minSqDist > distanceToSplittingDiskSqrd) QueryClosestPointRecursive(point, ref minPos, ref minSqDist, lessLikelyBranch);
     } else {

@@ -119,6 +119,25 @@ public class KabschSolver {
     Profiler.EndSample();
     return covariance;
   }
+  public static Vector3[] TransposeMultSubtract(Vector3[] vec1, Vector3[] vec2, ref Vector3[] covariance) {
+    for (int i = 0; i < 3; i++) covariance[i] = Vector3.zero;
+
+    for (int k = 0; k < vec1.Length; k++) {//k is the column in this matrix
+      Vector3 left  = vec1[k];
+      Vector3 right = vec2[k];
+
+      covariance[0][0] += left[0] * right[0];
+      covariance[1][0] += left[1] * right[0];
+      covariance[2][0] += left[2] * right[0];
+      covariance[0][1] += left[0] * right[1];
+      covariance[1][1] += left[1] * right[1];
+      covariance[2][1] += left[2] * right[1];
+      covariance[0][2] += left[0] * right[2];
+      covariance[1][2] += left[1] * right[2];
+      covariance[2][2] += left[2] * right[2];
+    }
+    return covariance;
+  }
 }
 
 public static class FromMatrixExtension {

@@ -1,5 +1,7 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.UI;
 
 public class BSPTest : MonoBehaviour {
   public bool drawNaiveClosestPoint = false;
@@ -13,6 +15,12 @@ public class BSPTest : MonoBehaviour {
 
   BSP binarySpacePartition;
 
+  public Mesh diskMesh;
+  public Material diskMaterial;
+  public Material visitedDiskMaterial;
+  Matrix4x4[] diskMatrices;
+  public static List<Matrix4x4> visitedDisks;
+
 #if G3_USING_UNITY
   DMeshAABBTree3 g3MeshTree;
 #endif
@@ -25,6 +33,17 @@ public class BSPTest : MonoBehaviour {
       for (int i = 0; i < meshVertices.Length; i++) meshVertices[i] = model.transform.TransformPoint(meshVertices[i]);
       binarySpacePartition = new BSP(mesh, 14);
 
+      if (diskMaterial) {
+        int numDisksToDraw = Mathf.Min(binarySpacePartition.splittingDisks.Length, 15);
+        diskMatrices       = new Matrix4x4[numDisksToDraw];
+        for (int i = 0; i < numDisksToDraw; i++) {
+          diskMatrices[i]  = Matrix4x4.TRS(
+            binarySpacePartition.splittingDisks[i].average, 
+            Quaternion.LookRotation(binarySpacePartition.splittingDisks[i].plane), 
+            new Vector3(1f, 1f, 0.0001f) * Mathf.Sqrt(binarySpacePartition.splittingDisks[i].sqRadius));
+        }
+      }
+
 #if G3_USING_UNITY
       DMesh3Builder dMeshBuilder = new DMesh3Builder();
       dMeshBuilder.AppendNewMesh(false, false, false, false);
@@ -33,6 +52,13 @@ public class BSPTest : MonoBehaviour {
       g3MeshTree = new DMeshAABBTree3(dMeshBuilder.Meshes[0]);
       g3MeshTree.Build();
 #endif
+    }
+  }
+
+  public void Update() {
+    if (diskMaterial != null && visitedDisks != null) {
+      Matrix4x4[] diskArray = visitedDisks.ToArray();
+      Graphics.DrawMeshInstanced(diskMesh, 0, diskMaterial, diskArray, diskArray.Length, null, UnityEngine.Rendering.ShadowCastingMode.Off, false);
     }
   }
 
@@ -60,6 +86,8 @@ public class BSPTest : MonoBehaviour {
       Profiler.EndSample();
     }
 
+    if (visitedDisks == null) visitedDisks = new List<Matrix4x4>();
+    visitedDisks.Clear();
     Profiler.BeginSample("BSP Closest Point on Mesh", this);
     Gizmos.color = Color.white;
     Vector3 bspMinPos = Vector3.zero; float bspMinSqDist = 100000f;
