@@ -33,12 +33,12 @@
 				float newDistance = length(offset) - _Radius;
 				
 				float4 col = curCol;
-				if(_Subtraction == 0 && newDistance < curCol.a){
+				if (_Subtraction == 0 && newDistance < curCol.a) {
 					col.a = newDistance;
-					col.rgb = normalize(offset/newDistance);
-				} else if(_Subtraction == 1 && -newDistance > curCol.a) {
+					col.rgb = normalize(-offset);
+				} else if (_Subtraction == 1 && -newDistance > curCol.a) {
 					col.a = -newDistance;
-					col.rgb = normalize(offset/newDistance);
+					col.rgb = normalize(offset);
 				}
 				return col;
             }

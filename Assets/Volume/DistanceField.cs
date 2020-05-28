@@ -23,20 +23,23 @@ public class DistanceField : MonoBehaviour {
   }
 
   void Update() {
+    parametersUpdatedThisFrame = true;
     if (parametersUpdatedThisFrame) {
       blittingTexture.shaderPass = 0;
+      rotation = (rotation + Time.deltaTime) % 6.28f;
       Vector3 center = (Mathf.Sin(rotation) * Vector3.right * 0.25f) +
                        (Mathf.Cos(rotation) * Vector3.up * 0.25f) +
                        (Vector3.one * 0.5f);
       sphereBlittingMaterial.SetVector("_Center", center);
-      sphereBlittingMaterial.SetInt("_Subtraction", subtraction ? 1 : 0);
-      sphereBlittingMaterial.SetFloat("_Radius", radius);
-      volumeMaterial.SetFloat("_Inflation", inflation);
+      sphereBlittingMaterial.SetInt   ("_Subtraction", subtraction ? 1 : 0);
+      sphereBlittingMaterial.SetFloat ("_Radius", radius);
+      volumeMaterial        .SetFloat ("_Inflation", inflation);
       blittingTexture.Update();
-    } else {
-      //Else just run the distance field healing shader passively
+    } else if(repairDistanceField){
+      // Else just run the distance field healing shader passively
+      // THIS IS A BROKEN TECHNIQUE, JUST USE JUMP FLOODING
       blittingTexture.shaderPass = usePlanarRepair ? 3 : 2;
-      if (repairDistanceField) { blittingTexture.Update(); }
+      blittingTexture.Update();
     }
     parametersUpdatedThisFrame = false;
   }

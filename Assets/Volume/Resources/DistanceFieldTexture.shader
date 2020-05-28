@@ -87,7 +87,7 @@
 				  alpha += dist;
 				}
 
-				col = float4(0.02,0,0,1)*it;//colorSum;
+				col = colorSum;//float4(0.02,0,0,1)*it; // Draw the number of raymarching iterations
 			}
 			ENDCG
 		}
