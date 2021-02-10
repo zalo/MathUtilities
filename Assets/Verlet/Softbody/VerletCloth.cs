@@ -21,6 +21,7 @@ public class VerletCloth : MonoBehaviour {
     MeshFilter filter = GetComponent<MeshFilter>();
     clothMesh = Instantiate(filter.mesh);
     clothMesh.MarkDynamic();
+    clothVertsArray = clothMesh.vertices;
     clothVerts = new NativeArray<Vector3>(clothMesh.vertices, Allocator.Persistent);
     prevClothVerts = new NativeArray<Vector3>(clothMesh.vertices, Allocator.Persistent);
     accumulatedDisplacements = new NativeArray<Vector4>(new Vector4[clothVerts.Length], Allocator.Persistent);
