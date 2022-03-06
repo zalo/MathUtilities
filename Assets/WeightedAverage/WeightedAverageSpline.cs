@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 
 [ExecuteInEditMode]
 public class WeightedAverageSpline : MonoBehaviour {
@@ -28,12 +27,12 @@ public class WeightedAverageSpline : MonoBehaviour {
 
         // Draw Bumpy (Naively Interpolated) Pose
         Gizmos.color = new Color(1.0f, 0.3f, 0.3f, 1f);
-        Pose bumpyPose = smoothPoseAtIndex(jitteredPoses, Mathf.Repeat((float)EditorApplication.timeSinceStartup * 5f, jitteredPoses.Count - 1), 1);
+        Pose bumpyPose = smoothPoseAtIndex(jitteredPoses, Mathf.Repeat(Time.unscaledTime * 5f, jitteredPoses.Count - 1), 1);
         Gizmos.DrawMesh(cubeMesh, bumpyPose.position, bumpyPose.rotation);
 
         // Draw Smoothed Pose
         Gizmos.color = new Color(0.3f, 1.0f, 0.3f, 1f);
-        Pose smoothedPose = smoothPoseAtIndex(jitteredPoses, Mathf.Repeat((float)EditorApplication.timeSinceStartup * 5f, jitteredPoses.Count - 1), averagingWindow);
+        Pose smoothedPose = smoothPoseAtIndex(jitteredPoses, Mathf.Repeat(Time.unscaledTime * 5f, jitteredPoses.Count - 1), averagingWindow);
         Gizmos.DrawMesh(cubeMesh, smoothedPose.position, smoothedPose.rotation);
     }
 

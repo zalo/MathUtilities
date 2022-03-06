@@ -83,6 +83,8 @@ A port of Roy Jonker's famous solution to the [Linear Assignment Problem](https:
 
 See the source file for Commercial Licensing Details.
 
+### [Spatial Hashing](https://github.com/zalo/MathUtilities/blob/master/Assets/SpatialHashing/SpatialHashing.cs)
+A reimplementation of [Matthias Muller Fischer's O(1) Spatial Hashing system](https://www.youtube.com/watch?v=D2M8jTtKi44) for Particle-Particle collision lookups.  Generally results in a >20x speedup over naive O(n^2) collision checking.
 
 ### [Linear Blend Skinning](https://github.com/zalo/MathUtilities/blob/master/Assets/Skinning/LinearBlendSkinning.cs)
 A reference implementation that demonstrates how to apply bone motions to a model using the data contained within a skinned mesh renderer.   As they say, there is more than one way to skin a mesh.
@@ -121,10 +123,10 @@ A special heuristic formula to compute the time-optimal movement trajectory for 
 Formula taken from this excellent course: http://underactuated.csail.mit.edu/underactuated.html?chapter=9
 
 
-### [Bézier Trajectory Deformation](https://github.com/zalo/MathUtilities/tree/master/Assets/Bezier)
+### [Bï¿½zier Trajectory Deformation](https://github.com/zalo/MathUtilities/tree/master/Assets/Bezier)
 <img src="https://i.imgur.com/Tm3a9by.gif">
 
-This is a technique for augmenting the end-point of trajectories composed of discrete segments, using a rigid-as-possible/"Blossoming" (Bézier-like) interpolation scheme.  Includes an implementation for both 3D and 6D trajectories.
+This is a technique for augmenting the end-point of trajectories composed of discrete segments, using a rigid-as-possible/"Blossoming" (Bï¿½zier-like) interpolation scheme.  Includes an implementation for both 3D and 6D trajectories.
 
 Inspired by this paper: https://april.eecs.umich.edu/media/pdfs/olson2006icra.pdf
 
