@@ -3,9 +3,10 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using Unity.Jobs;
 using Unity.Collections;
+using System.Collections;
 
 public class SpatialHashing : MonoBehaviour {
-  public bool useSpatialHash = false;
+  public bool useSpatialHash = false, useEnumerator = false;
   public int numParticles = 10000;
   [Range(-1f, 1f)]
   public float floorHeight = 0.001f;
@@ -142,6 +143,34 @@ public class SpatialHashing : MonoBehaviour {
         if (samples > 0) { offsets[i] /= samples; }
       }
     }
+    [Unity.Burst.BurstCompile]
+    public struct CalculateCollisionOffsetsHashEnumerator : IJobParallelFor {
+      [ReadOnly]
+      public SpatialHash hash;
+      public NativeArray<Vector3> offsets;
+      [ReadOnly]
+      public NativeArray<Vector3> particles;
+      // Need to specify these separately because they're ReadOnly here, but writable in another function
+      [ReadOnly]
+      public float particleDiameter, spacing;
+
+      public void Execute(int i) {
+        offsets[i] = Vector3.zero; int samples = 0;
+        foreach (int j in hash.QueryPosition(particles[i], particleDiameter)) {
+          if (i != j) {
+            // Collide these two particles together
+            Vector3 offset = particles[i] - particles[j];
+            float offsetMagnitude = offset.magnitude;
+            if (offsetMagnitude < particleDiameter) {
+              Vector3 normalizedOffset = offset / offsetMagnitude;
+              offsets[i] += normalizedOffset * (particleDiameter - offsetMagnitude) * 0.5f;
+              samples++;
+            }
+          }
+        }
+        if (samples > 0) { offsets[i] /= samples; }
+      }
+    }
 
     [Unity.Burst.BurstCompile]
     public struct ApplyCollisionOffsets : IJobParallelFor {
@@ -185,10 +214,19 @@ public class SpatialHashing : MonoBehaviour {
       previousHandle = new SpatialHashData.ConstructSpatialHash() {
         hash = data.hash, particles = data.particles, particleDiameter = particleDiameter
       }.Schedule(dependsOn: previousHandle);
-      previousHandle = new SpatialHashData.CalculateCollisionOffsetsHash() {
-        particles = data.particles, offsets = data.offsets, particleDiameter = particleDiameter, 
-        cellStart = data.hash.cellStart, cellEntries = data.hash.cellEntries, spacing = particleDiameter, tableSize = data.hash.tableSize
-      }.Schedule(data.particles.Length, 32, dependsOn: previousHandle);
+
+
+      if (useEnumerator) {
+        previousHandle = new SpatialHashData.CalculateCollisionOffsetsHashEnumerator() {
+          hash = data.hash, particles = data.particles, offsets = data.offsets, 
+          particleDiameter = particleDiameter, spacing = particleDiameter
+        }.Schedule(data.particles.Length, 32, dependsOn: previousHandle);
+      } else {
+        previousHandle = new SpatialHashData.CalculateCollisionOffsetsHash() {
+          particles = data.particles, offsets = data.offsets, particleDiameter = particleDiameter,
+          cellStart = data.hash.cellStart, cellEntries = data.hash.cellEntries, spacing = particleDiameter, tableSize = data.hash.tableSize
+        }.Schedule(data.particles.Length, 32, dependsOn: previousHandle);
+      }
     } else {
       // Calculate the n^2 collisions
       previousHandle = new SpatialHashData.CalculateCollisionOffsetsNaive() {
@@ -218,16 +256,17 @@ public class SpatialHashing : MonoBehaviour {
 }
 
 
-public struct SpatialHash {
-  public float spacing; public int tableSize, querySize;
-  public NativeArray<int> cellStart, cellEntries, queryIds;
+public struct SpatialHash : IEnumerable {
+  private Vector3 _pos;
+  public float spacing, maxDist; public int tableSize;
+  public NativeArray<int> cellStart, cellEntries;
   public SpatialHash(float spacing, int maxNumObjects) {
     this.spacing = spacing;
     tableSize    = 2 * maxNumObjects;
     cellStart    = new NativeArray<int>(tableSize + 1, Allocator.Persistent);
     cellEntries  = new NativeArray<int>(maxNumObjects, Allocator.Persistent);
-    queryIds     = new NativeArray<int>(maxNumObjects, Allocator.Persistent);
-    querySize    = 0;
+    _pos         = Vector3.zero;
+    maxDist      = spacing;
   }
 
   // Static Functions
@@ -269,33 +308,72 @@ public struct SpatialHash {
     }
   }
 
-  // Need to do this inside of the parallel for callback...
-  /*public void query(Vector3 pos, float maxDist, float spacing) {
-    int x0 = intCoord(pos.x - maxDist, spacing);
-    int y0 = intCoord(pos.y - maxDist, spacing);
-    int z0 = intCoord(pos.z - maxDist, spacing);
-    int x1 = intCoord(pos.x + maxDist, spacing);
-    int y1 = intCoord(pos.y + maxDist, spacing);
-    int z1 = intCoord(pos.z + maxDist, spacing);
-
-    querySize = 0;
-    for (int xi = x0; xi <= x1; xi++) {
-      for (int yi = y0; yi <= y1; yi++) {
-        for (int zi = z0; zi <= z1; zi++) {
-          int h = hashCoords(xi, yi, zi, tableSize);
-          int start = cellStart[h];
-          int end   = cellStart[h + 1];
-
-          for (int i = start; i < end; i++) {
-            queryIds[querySize] = cellEntries[i];
-            querySize++;
-          }
-        }
-      }
-    }
-  }*/
+  public SpatialHash QueryPosition(Vector3 pos, float maxDist) { _pos = pos; this.maxDist = maxDist; return this; }
+  IEnumerator IEnumerable.GetEnumerator() { return (IEnumerator)GetEnumerator(); }
+  public SpatialHashEnumerator GetEnumerator() {
+    return new SpatialHashEnumerator(_pos, maxDist, spacing, tableSize, cellStart, cellEntries);
+  }
 
   public void Dispose() {
-    cellStart.Dispose(); cellEntries.Dispose(); queryIds.Dispose();
+    cellStart.Dispose(); cellEntries.Dispose();
+  }
+}
+
+public struct SpatialHashEnumerator : IEnumerator {
+  public Vector3 pos; public Vector3Int corner1, curCell; public int position, end;
+  public float spacing, maxDist; public int tableSize;
+  [ReadOnly]
+  public NativeArray<int> cellStart, cellEntries;
+
+  public SpatialHashEnumerator(Vector3 pos, float maxDist, float spacing, 
+    int tableSize, NativeArray<int> cellStart, NativeArray<int> cellEntries) {
+    this.pos         = pos;
+    this.maxDist     = maxDist;
+    this.spacing     = spacing;
+    this.tableSize   = tableSize;
+    this.cellStart   = cellStart;
+    this.cellEntries = cellEntries;
+
+    this.curCell = new Vector3Int(SpatialHash.intCoord(pos.x - maxDist, spacing),
+                                  SpatialHash.intCoord(pos.y - maxDist, spacing),
+                                  SpatialHash.intCoord(pos.z - maxDist, spacing));
+    this.corner1 = new Vector3Int(SpatialHash.intCoord(pos.x + maxDist, spacing),
+                                  SpatialHash.intCoord(pos.y + maxDist, spacing),
+                                  SpatialHash.intCoord(pos.z + maxDist, spacing));
+    int h = SpatialHash.hashCoords(curCell.x, curCell.y, curCell.z, tableSize);
+    position = cellStart[h] - 1; // Enumerators are positioned before the first element until the first MoveNext() call.
+    end = cellStart[h + 1];
+  }
+
+  public int         Current { get { return cellEntries[position]; } }
+  object IEnumerator.Current { get { return Current; } }
+
+  public void Reset() {
+    this.curCell = new Vector3Int(SpatialHash.intCoord(pos.x - maxDist, spacing),
+                                  SpatialHash.intCoord(pos.y - maxDist, spacing),
+                                  SpatialHash.intCoord(pos.z - maxDist, spacing));
+    int h = SpatialHash.hashCoords(curCell.x, curCell.y, curCell.z, tableSize);
+    position = cellStart[h] - 1; // Enumerators are positioned before the first element until the first MoveNext() call.
+    end      = cellStart[h + 1];
+  }
+
+  public bool MoveNext() {
+    if(position < end) {
+      position++;
+      return true;
+    } else if (curCell != corner1 + Vector3Int.one) { // TODO: Scrutinize this line!!!!
+             if (curCell.z <= corner1.z) {
+        curCell.z++;
+      } else if (curCell.y <= corner1.y) {
+        curCell.y++;
+      } else if (curCell.x <= corner1.x) {
+        curCell.x++;
+      }
+      int h = SpatialHash.hashCoords(curCell.x, curCell.y, curCell.z, tableSize);
+      position = cellStart[h];
+      end = cellStart[h + 1];
+      return true;
+    }
+    return false;
   }
 }
