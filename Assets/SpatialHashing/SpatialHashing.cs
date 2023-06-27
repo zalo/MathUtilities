@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using Unity.Jobs;
 using Unity.Collections;
+using UnityEngine.Rendering;
 using System.Collections;
 
 public class SpatialHashing : MonoBehaviour {
@@ -245,7 +246,7 @@ public class SpatialHashing : MonoBehaviour {
     while (particlesDrawn < numParticles) {
       int particlesToDraw = Mathf.Min(1023, numParticles - particlesDrawn);
       System.Array.Copy(particles, particlesDrawn, instanceMatrices, 0, particlesToDraw);
-      Graphics.DrawMeshInstanced(sphereMesh, 0, sphereMaterial, instanceMatrices);
+      Graphics.DrawMeshInstanced(sphereMesh, 0, sphereMaterial, instanceMatrices, particlesToDraw, null, UnityEngine.Rendering.ShadowCastingMode.Off);
       particlesDrawn += particlesToDraw;
     }
 
