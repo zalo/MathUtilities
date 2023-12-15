@@ -39,12 +39,31 @@ public static class Fit {
 
   public static void Line(List<Vector3> points, out Vector3 origin,
                           ref Vector3 direction, int iters = 100, bool drawGizmos = false) {
-    if (
-    direction == Vector3.zero ||
-    float.IsNaN(direction.x) ||
-    float.IsInfinity(direction.x)) direction = Vector3.up;
+    if (points.Count == 1) {
+        origin = points[0];
+        return;
+    }
 
-    //Calculate Average
+    if (points.Count == 2) {
+        origin = points[0];
+        direction = points[1] - points[0];
+
+        if (drawGizmos) {
+            Gizmos.color = Color.red;
+            Gizmos.DrawRay(origin, direction * 2f);
+            Gizmos.DrawRay(origin, -direction * 2f);
+        }
+
+        return;
+    }
+
+    // Initial direction
+    direction.Normalize();
+    if (direction == Vector3.zero) {
+        direction = points[1] - points[0];
+    }
+    
+    // Calculate Average
     origin = Vector3.zero;
     for (int i = 0; i < points.Count; i++) origin += points[i];
     origin /= points.Count;
